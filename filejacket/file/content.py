@@ -33,7 +33,7 @@ from ..pipelines.renamer import UniqueRenamer
 
 if TYPE_CHECKING:
     from . import BaseFile
-    from ..pipelines.renamer import Renamer
+    from ..pipelines.renamer import BaseRenamer
 
 
 __all__ = [
@@ -142,7 +142,7 @@ class FileContent:
     Whether the content as whole was cached. Being True the current buffer will point to a stream
     of `_cached_content`.
     """
-    cache_in_file_renamer: type[Renamer] = UniqueRenamer
+    cache_in_file_renamer: type[BaseRenamer] = UniqueRenamer
     """
     Class that handle the renaming of a file when using the cache in file option.
     """
@@ -237,7 +237,7 @@ class FileContent:
         """
         return self
 
-    def __next__(self) -> bytes | str | None:
+    def __next__(self) -> bytes | str:
         """
         Method that defines the behavior of iterable blocks of current object.
         This method has the potential to double the memory size of current object storing
@@ -429,13 +429,20 @@ class FileContent:
         """
         return self.buffer_helper.binary
     
+    @property
+    def is_seekable(self):
+        """
+        If content cached or buffered support seek.
+        """
+        return self.buffer.seekable()
+        
     def reset(self) -> None:
         """
         Method to reset the content cached or buffer if allowed.
         """
-        if self.buffer.seekable():
+        if self.is_seekable:
             self.buffer.seek(0)
-
+    
     def read(self, size: int | None = None) -> bytes | str | None:
         """
         Method to return part or whole content cached or buffered.
@@ -563,17 +570,17 @@ class FilePacket:
         """
         self.history = []
 
-    def files(self) -> set[BaseFile]:
+    def files(self) -> list[BaseFile]:
         """
         Method to obtain the list of objects File stored at `_internal_files`.
         """
-        return set(self._internal_files.values())
+        return list(self._internal_files.values())
 
-    def names(self) -> set[str]:
+    def names(self) -> list[str]:
         """
         Method to obtain the list of names of internal files stored at `_internal_files`.
         """
-        return set(self._internal_files.keys())
+        return list(self._internal_files.keys())
 
     def reset(self) -> None:
         """

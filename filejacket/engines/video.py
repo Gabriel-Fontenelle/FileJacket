@@ -25,8 +25,6 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from imageio.core.v3_plugin_api import PluginV3
-    from numpy import ndarray
     from io import BytesIO
 
     from .pipelines.extractor.package import PackageExtractor
@@ -116,90 +114,3 @@ class VideoEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method show should be override in child class.")
-
-
-class MoviePyVideo(VideoEngine):
-    """
-    Class that standardized methods of MoviePy library.
-    This class depends on MoviePy, OpenCV and FFMPG installed in the system.
-    """
-
-    def get_duration(self) -> int:
-        """
-        Method to return the duration in seconds of the video.
-        """
-        return self.video.duration
-
-    def get_frame_rate(self) -> float:
-        """
-        Method to return the framerate of the video.
-        """
-        return self.video.fps
-
-    def get_frame_as_bytes(self, index: int, encode_format: str = "jpeg") -> ndarray:
-        """
-        Method to return content of the frame at index as bytes.
-        TODO: Test that buffer is really bytes.
-        """
-        formats: dict[str, str] = {
-            "jpeg": ".jpg"
-        }
-
-        from cv2 import imencode
-        success, buffer = imencode(formats[encode_format], self.video.get_frame(index))
-
-        if not success:
-            raise ValueError(f"Could not convert image to format {encode_format} in MoviePyVideo.get_frame_as_bytes.")
-
-        return buffer
-
-    def get_frame_image(self, index) -> Any:
-        """
-        Method to return the array representing the frame at index.
-        """
-        return self.video.get_frame(index)
-
-    def get_size(self) -> tuple[int, int]:
-        """
-        Method to return the width and height of the video.
-        """
-        return self.video.size
-
-    def prepare_video(self) -> None:
-        """
-        Method to prepare the video using the stored buffer as the source.
-        """
-        from moviepy.editor import VideoClip
-        from imageio import imopen
-
-        video_array: PluginV3 = imopen(self.source_buffer, io_mode="r") # type: ignore
-        self.metadata: dict[str, Any] = video_array.metadata()
-
-        def make_frame(t):
-            """
-            Internal function to create the frame from video_array.
-            This function allow for consuming of video with lazy operation.
-            """
-            return video_array.read(index=t)
-
-        self.video = VideoClip(make_frame, duration=self.metadata['duration'])
-        self.video.fps = self.metadata['fps']
-
-    def show(self) -> None:
-        """
-        Method to display the video for debugging purposes.
-        """
-        total_frames: int = self.get_frame_amount()
-
-        frame: int = 0
-
-        from cv2 import imshow, waitKey, destroyAllWindows
-
-        while frame < total_frames:
-            imshow("Video", self.get_frame_image(frame))
-            frame += 1
-
-            if waitKey(25) & 0xFF == ord('q'):
-                break
-
-        destroyAllWindows()

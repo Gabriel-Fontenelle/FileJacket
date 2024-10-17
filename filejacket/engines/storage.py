@@ -45,8 +45,6 @@ from os.path import (
 )
 from pathlib import (
     Path,
-    WindowsPath,
-    PosixPath
 )
 # third-party
 from shutil import copyfile, rmtree
@@ -59,13 +57,11 @@ if TYPE_CHECKING:
     from io import BytesIO, StringIO
 
 __all__ = [
-    'Storage',
-    'WindowsFileSystem',
-    'LinuxFileSystem',
+    "StorageEngine",
 ]
 
 
-class Storage:
+class StorageEngine:
     """
     Class that standardized methods of different file systems.
     """
@@ -191,7 +187,8 @@ class Storage:
             for chunk in content:
                 file_pointer.write(chunk)
                 file_pointer.flush()
-                os.fsync(file_pointer.fileno())
+            
+            os.fsync(file_pointer.fileno())
 
     @classmethod
     def backup(cls, file_path_origin: str, force: bool = False) -> bool:
@@ -376,7 +373,17 @@ class Storage:
             return path
 
         return dirname(path)
+    
+    @classmethod
+    def get_parent_directory_from_path(cls, path: str) -> str:
+        """
+        Method used to get the parent path from a complete path.
+        """
+        if cls.is_dir(path):
+            return dirname(path)
 
+        return dirname(dirname(path))
+    
     @classmethod
     def get_relative_path(cls, path: str, relative_to: str) -> str:
         """
@@ -525,153 +532,3 @@ class Storage:
         This method should be overwritten in child specific for Operational System.
         """
         raise NotImplementedError("Method get_pathlib_path(path) should be accessed through inherent class.")
-
-
-class WindowsFileSystem(Storage):
-    """
-    Class that standardized methods of file systems for Windows Operational System.
-    """
-
-    temporary_folder: str = "C:\\temp\\Handler"
-    """
-    Define the location of temporary content in filesystem.
-    """
-    file_sequence_style: tuple[Pattern[str], str] = (re.compile(r"(\ *\(\d+?\))?(\.[^.]*$)"), r" ({sequence})\2")
-    """
-    Define the pattern to use to replace a sequence in the stylus of the filesystem.
-    The first part identify the search and the second the replace value.
-    This allow search by `<str>.<str>` and replace by `<str> (<int>).<str>`.
-    """
-
-    @classmethod
-    def get_path_id(cls, path: str) -> str:
-        """
-        Method to get the file system id for a path.
-        Path can be both a directory or file.
-
-        TODO: Test it at Windows.
-        """
-        # TODO: Conclude function after testing on Windows.
-        file = r"C:\Users\Grandmaster\Desktop\testing.py"
-        output = os.popen(fr"fsutil file queryfileid {file}").read()
-
-        return str(output)
-
-    @classmethod
-    def get_created_date(cls, path: str) -> datetime:
-        """
-        Try to get the date that a file was created, falling back to when it was
-        last modified if that isn't possible.
-        See https://stackoverflow.com/a/39501288/1709587 for explanation.
-        Source: https://stackoverflow.com/a/39501288
-        """
-        time = getctime(path)
-
-        return datetime.fromtimestamp(time)
-
-    @classmethod
-    def sanitize_path(cls, path: str) -> str:
-        """
-        Method to normalize a path for use.
-        This method collapse redundant separators and up-level references so that A//B, A/B/, A/./B and A/foo/../B
-        all become A/B. It will also convert uppercase character to lowercase and `/` to `\\`.
-        """
-        return normpath(normcase(path))
-
-    @classmethod
-    def get_pathlib_path(cls, path: str) -> Path:
-        """
-        Method to get the custom Path class with accessor override.
-        """
-        class CustomPath(WindowsPath):
-
-            def open(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.opener(*args, **kwargs)
-
-            def listdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.list_files_and_directories(*args, **kwargs)
-
-            def mkdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.create_directory(*args, **kwargs)
-
-            def rmdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.delete(*args, **kwargs)
-
-            def rename(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.rename(*args, **kwargs)
-
-            def replace(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.replace(*args, **kwargs)
-
-        return CustomPath(path)
-
-
-class LinuxFileSystem(Storage):
-    """
-    Class that standardized methods of file systems for Linux Operational System.
-    """
-
-    temporary_folder: str = "/tmp/Handler"
-    """
-    Define the location of temporary content in filesystem.
-    """
-    file_sequence_style: tuple[Pattern[str], str] = (re.compile(r"(\ *-\ *\d+?)?(\.[^.]*$)"), r" - {sequence}\2")
-    """
-    Define the pattern to use to replace a sequence in the stylus of the filesystem.
-    The first part identify the search and the second the replace value.
-    This allow search by `<str>.<str>` and replace by `<str> - <int>.<str>`.
-    """
-
-    @classmethod
-    def get_path_id(cls, path: str) -> str:
-        """
-        Method to get the file system id for a path.
-        Path can be both a directory or file.
-        """
-        return str(os.stat(path, follow_symlinks=False).st_ino)
-
-    @classmethod
-    def get_created_date(cls, path: str) -> datetime:
-        """
-        Try to get the date that a file was created, falling back to when it was
-        last modified if that isn't possible.
-        See https://stackoverflow.com/a/39501288/1709587 for explanation.
-        Source: https://stackoverflow.com/a/39501288
-        """
-        stats = os.stat(path)
-        try:
-            time = stats.st_birthtime
-        except AttributeError:
-            # We're probably on Linux. No easy way to get creation dates here,
-            # so we'll settle for when its content was last modified.
-            time = stats.st_mtime
-
-        return datetime.fromtimestamp(time)
-
-    @classmethod
-    def get_pathlib_path(cls, path: str) -> Path:
-        """
-        Method to get the custom Path class with accessor override.
-        """
-
-        class CustomPath(PosixPath):
-
-            def open(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.opener(*args, **kwargs)
-
-            def listdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.list_files_and_directories(*args, **kwargs)
-
-            def mkdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.create_directory(*args, **kwargs)
-
-            def rmdir(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.delete(*args, **kwargs)
-
-            def rename(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.rename(*args, **kwargs)
-
-            def replace(self, *args: Any, **kwargs: Any) -> Any:
-                return cls.replace(*args, **kwargs)
-
-        return CustomPath(path)
