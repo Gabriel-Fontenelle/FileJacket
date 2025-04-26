@@ -27,6 +27,6 @@ def test_class_for_renaming_has_required_attribute(package_class):
     assert hasattr(package_class, 'get_name')
 
 
-def test_base_class_for_renaming_raise_not_implemented_error_in_some_attributes(request, file_fixture):
+def test_base_class_for_renaming_raise_not_implemented_error_in_some_attributes():
     with pytest.raises(NotImplementedError):
         BaseRenamer.get_name(directory_path="path", filename="filename", extension="jpg")
