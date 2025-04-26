@@ -30,75 +30,23 @@ Basically this project abstracted the loading and creation of files to avoid som
 - Updating CHECKSUM after file`s content is changed;
 - Loading and saving in a remote filesystem is complicated and each filesystem have distinct api calls.
 
-Thus, this project was created with focus in extendability and hopefull it will be usefull for those that want to 
-avoid the problems mentioned. 
+Thus, this project was created with focus in extendability and hopeful it will be useful for those that want to avoid the problems mentioned. 
 
 ### What resources this project offer when handling files?
 
-The `BaseFile`, where all file`s class are inherent from, has the following attributes:
+The `BaseFile`, where all file`s class are inherent from in this project, allow for:
 
-- `id` (`int` or `None`) - File`s ID in the File System.
-- `filename` (`str` or `None`) -  Name of file without extension.
-- `extension` (`str` or `None`) - Extension of file.
-- `complete_filename` (`str`) - Merge of `filename` with `extension`.
-- `create_date` (`datetime.datetime` or `None`) - Datetime when file was created.
-- `update_date` (`datetime.datetime` or `None`) - Datetime when file was updated.
-- `path` (`str` or `None`) - Full path to file including filename. This is the raw path only partially sanitized.
-- `sanitize_path` (`str` or `None`) - Full sanitized path to file including filename.
-- `save_to` (`str` or `None`) - Path of directory to save file. This path will be use for mixing relative paths.
-- `relative_path` (`str` or `None`) - Relative path to save file. This path will be use for generating whole path 
-  together with `save_to` and `complete_filename` (e.g `save_to` + `relative_path` + `complete_filename`). 
-- `length` (`int`) - Size of file content.
-- `mime_type` (`str` or `None`) - File`s mime type.
-- `type` (`str` or `None`) - File's type (e.g. image, audio, video, application).
-
-- `hashes` (`dict`) - Checksum information for file. It can be multiples like MD5, SHA128, SHA256, SHA512.
-- `file_system_handler` (`FileSystem`) - FileSystem currently in use for File.
-    It can be LinuxFileSystem, WindowsFileSystem or a custom one.
-- `mime_type_handler` = (`BaseMimeTyper`) - Mimetype handler that defines the source of know Mimetypes.
-  This is used to identify mimetype from extension and vice-verse.
-- `uri_handler` (`URI`) - URI handler that defines methods to parser the URL.
-- `extract_data_pipeline` (`Pipeline`) - Pipeline to extract data from multiple sources. This should be override at 
-   child class.
-- `compare_pipeline` (`Pipeline`) - Pipeline to compare two files.
-- `hasher_pipeline` (`Pipeline`) -  Pipeline to generate hashes from content. 
-- `rename_pipeline` (`Pipeline`) - Pipeline to rename file when saving.
-
-- `meta` (`FileMetadata`) - Controller for additional metadata info that file can have. Those metadata will not always 
-  exist for all files.
-- `_state` (`FileState`) - Controller for state of file. The file will be set-up with default state before being 
-  loaded or create from stream.
-- `_actions` (`FileActions`) - Controller for pending actions that file must run. The file will be set-up with default 
-  (empty) 
-  actions.
-- `_naming` (`FileNaming`) - Controller for renaming restrictions that file must adopt.
-- `content` (`FileContent`) - Controller for how the content of file will be handled.
-- `is_binary` (`bool`) - Whether the file content is binary or not. It is a shortcut to `file.content.is_binary`. 
-- `is_content_wholesome` (`bool`) - Whether the file hash is the same as the one generate by its content. It is a shortcut to `file.hashes.validate()`. 
-
-and the following methods:
-
-- `add_valid_filename` - Method to add filename and extension to file only if it has a valid extension.
-        This method return boolean to indicate whether a filename and extension was added or not.
-- `compare_to` - Method to run the pipeline, for comparing files.
-        This method set-up for current file object with others.
-- `generate_hashes` - Method to run the pipeline, to generate hashes, set-up for the file.
-- `refresh_from_disk` - This method will reset all attributes, calling the pipeline to extract data again from disk.
-- `save` - Method to save file to file system. In this method we do some validation and verify if file can be saved
-        following some options informed through parameter `options`.
-- `validate` - Method to validate if minimum attributes of file were set to allow saving.
-- `write_content` - Method to write content to a given path. This method will truncate the file before saving content to it.
-
-and provide shortcut to the following exceptions:
-
-- `ImproperlyConfiguredFile` - Exception to throw when a required configuration is missing or misplaced.
-- `ValidationError` - Exception to throw when a required attribute to be save is missing or improperly configured.
-- `OperationNotAllowed` - Exception to throw when a operation is no allowed to be performed due to how the options are set-up in `save` 
-  method.
-- `NoInternalContentError` - Exception to throw when file was no internal content or being of wrong type to have internal content.
-- `ReservedFilenameError` - Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
-    reserved. 
-
+- Manually or automatically creating hashes for the content of file when saving;
+- Searching and loading of hash for file in `CHECKSUM.<hash extension>` or `*.<hash extension>`;
+- Checking the integrity of file with its hash;  
+- Generating thumbnail for the file. Currently support epub, images (gif, jgp, png, tiff, ...), videos (mkv, mpeg, mp4, avi,...), psd, pdf and a few others;
+- Generating a preview animated image for the content of file;
+- Protect the original file if changes are made in the content (or not, if the option to override and not save a backup are disabled when saving);
+- Renaming duplicated files on save if override is not allowed with filename in POSIX or Windows format (`<name> (1).<extension>` or `<name> - 1.<extension>`);
+- Comparing two files following a pipeline to check if some attributes are equal (the pipeline is customizable with processors to check if name, size or whole content is the same);
+- Serialize the file object to a generic JSON, a specific JSON (less size used than generic one) and Pickle; 
+- Manually or automatically cache content when reading it. The content will automatically be cached in file or in memory if the stream source of file is not seekable (generally from an external source, e.g download);
+- All the above to work with distinct FileSystem, be it local or from cloud providers (for it to work the FileSystemEngine class must be extended for the new filesystem, currently only Windows and Linux are implemented).
 
 ## How to use
 
@@ -205,6 +153,17 @@ Contributions, issues and feature requests are welcome!
 ## Related Projects
 
 Soon...
+
+## Unsatisfying things that needs better code before version 1:
+
+- The pipeline for hash generation with multiple hashes should not need to read the whole file for each hash algorithm. A solution is to have a distinct pipeline to work with hashes (probably the pipeline resource will be refactored the format of engine/adapter that can be extended).
+- The Blake3 hasher should be added to the list of hashers.
+- The option to generate an ecc for file recovery with customizable size and percent of recovery.
+- Do the default thumbnail generator and thumbnail composer for multiple files inside a file packet (compressed container).
+- When generating the thumbnail for a file inside a compressed file inside another compressed file the later compressed file will be load whole to memory and if its size is greater than the free memory the code will be killed. This need to be fixed with a warning that check the RAM available space (there is a class for that already) or a way to partial decompress a compressed block from the upper stream.
+- Filename, path, save_to should be refactored to allow for both a absolute and relative name, thus allowing for compressing multiple files and for serializing without absolute paths.
+- Code should be refactored to allow multi process execution for hashing, loading internal files and generating thumbnails.
+
 
 ## License
 
