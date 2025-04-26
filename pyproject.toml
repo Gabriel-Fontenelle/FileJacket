@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "FileJacket"
-version = "0.12.1"
+version = "0.13.1"
 description = "Package for abstracting file system handler in an oriented-object style."
 authors = ["Gabriel <contato@gabrielfontenelle.com>"]
 license = "GNU GENERAL PUBLIC LICENSE v3"
@@ -43,6 +43,11 @@ pytest = "*"
 pytest-shutil = "^1.7.0"
 mypy = "^1.8.0"
 ruff = "^0.2.2"
+
+[tool.poetry.group.dev.dependencies]
+types-pillow = "^10.2.0.20240822"
+types-psutil = "^6.1.0.20241102"
+types-send2trash = "^1.8.2.7"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
