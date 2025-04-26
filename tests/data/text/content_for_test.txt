@@ -1,0 +1,2 @@
+Text in UTF-8 for testing of content.
+TEST 
