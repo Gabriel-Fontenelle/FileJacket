@@ -348,7 +348,7 @@ class MimeTypeFromFilenameExtractor(BaseExtractor):
         - mime_type
         - type
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
         """
         # Check if already is an extension and mimetype, if exists do nothing.
         if file_object.mime_type and not overrider:
@@ -357,28 +357,38 @@ class MimeTypeFromFilenameExtractor(BaseExtractor):
         # Check if there is an extension for file else is not possible to extract metadata from it.
         if not file_object.extension:
             raise ValueError(
-                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtractor.extract`."
+                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtractor.extract`.\n"
+                f"Path informed: `{file_object.path}`."
             )
+
+        if file_object.meta.partial:
+            extension = file_object.extension.rsplit(".", 1)[0]
+        else:
+            extension = file_object.extension
 
         # Save in file_object mimetype and type obtained from mime_type_handler.
         file_object.mime_type = file_object.mime_type_handler.get_mimetype(
-            file_object.extension
+            extension
         )
         file_object.type = file_object.mime_type_handler.get_type(
-            file_object.mime_type, file_object.extension
+            file_object.mime_type, extension
         )
 
         # Save additional metadata to file.
         file_object.meta.compressed = (
-            file_object.mime_type_handler.is_extension_compressed(file_object.extension)
+            file_object.mime_type_handler.is_extension_compressed(extension)
         )
         file_object.meta.lossless = file_object.mime_type_handler.is_extension_lossless(
-            file_object.extension
+            extension
         )
         file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
-            file_object.extension
+            extension
         )
-        file_object._actions.to_list()
+        if file_object.meta.packed:
+            if file_object.meta.partial:
+                file_object._actions.listed()
+            else:
+                file_object._actions.to_list()
 
 
 class MetadataExtractor(BaseExtractor):
@@ -673,8 +683,9 @@ class FilenameFromURLExtractor(BaseExtractor):
             # The first part of the loop enforce mimetype, second not enforce mimetype.
             for result, enforce_mimetype in results:
                 # Check and set-up filename
-                if result.filename and file_object.add_valid_filename(
-                    result.filename, enforce_mimetype=enforce_mimetype
+                if result.filename and (
+                    file_object.add_valid_filename(result.filename, enforce_mimetype=enforce_mimetype)
+                    or file_object.add_partial_filename(result.filename, enforce_mimetype=enforce_mimetype)
                 ):
                     processed_uri = result.processed_uri
                     break
