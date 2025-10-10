@@ -26,8 +26,10 @@ from __future__ import annotations
 __all__: list[str] = [
     "CacheContentNotSeekableError",
     "EmptyContentError",
+    "ExtractorError",
     "ImproperlyConfiguredFile",
     "ImproperlyConfiguredPipeline",
+    "MultipleFileExistError",
     "NoInternalContentError",
     "OperationNotAllowed",
     "PipelineError",
@@ -78,6 +80,12 @@ class OperationNotAllowed(Exception):
 class CacheContentNotSeekableError(Exception):
     """
     Exception that defines error for when a cached content results in a buffer not seekable.
+    """
+
+
+class ExtractorError(ValueError):
+    """
+    Exception that defines error for wrong value input in extractor classes.
     """
 
 
