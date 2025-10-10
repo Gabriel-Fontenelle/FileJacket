@@ -890,8 +890,8 @@ class FileDictionarySerializer:
 class FileWithContentDictionarySerializer(FileDictionarySerializer):
     """
     Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a Python dictionary.
-    This class was created with specificity in mind and would need to be override if the object to be serialized is
-    has a custom class based on BaseFile.
+    This class was created with specificity in mind and would need to be overridden if the object to be serialized has
+    a custom class based on BaseFile.
     The content attribute will be serialized.
     """
 
@@ -901,8 +901,8 @@ class FileWithContentDictionarySerializer(FileDictionarySerializer):
 class FileJsonSerializer(SerializerJsonMixin, FileDictionarySerializer):
     """
     Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a json string.
-    This class was created with specificity in mind and would need to be override if the object to be serialized is
-    has a custom class based on BaseFile.
+    This class was created with specificity in mind and would need to be override if the object to be serialized has
+    a custom class based on BaseFile.
     The content attribute will not be serialized.
     """
 
@@ -912,8 +912,8 @@ class FileWithContentJsonSerializer(
 ):
     """
     Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a json string.
-    This class was created with specificity in mind and would need to be override if the object to be serialized is
-    has a custom class based on BaseFile.
+    This class was created with specificity in mind and would need to be overridden if the object to be serialized has
+    a custom class based on BaseFile.
     The content attribute will be serialized.
     """
 
