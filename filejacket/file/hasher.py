@@ -120,6 +120,12 @@ class FileHashes:
         """
         return bool(self._cache)
 
+    def __contains__(self, item):
+        """
+        Method to check if item exist in self._cache.
+        """
+        return item in self._cache
+
     @property
     def __serialize__(self) -> dict[str, Any]:
         """
