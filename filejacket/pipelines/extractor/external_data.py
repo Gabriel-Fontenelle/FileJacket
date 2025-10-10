@@ -192,6 +192,10 @@ class FilenameFromMetadataExtractor(BaseExtractor):
 
 
 class FileSystemDataExtractor(BaseExtractor):
+    """
+    Class that define the extraction of multiple information from filesystem for files.
+    """
+
     @classmethod
     def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
