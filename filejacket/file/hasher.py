@@ -234,6 +234,8 @@ class FileHashes:
     def save(self, overwrite: bool = False) -> None:
         """
         Method to save all hashes files if it was not saved already.
+        Due to this method being called in `BaseFile.save()` if `save_hashes`  is True, we force it to be False to avoid
+        circular saving.
         """
         if self.related_file_object is None:
             raise ImproperlyConfiguredFile(
@@ -242,9 +244,18 @@ class FileHashes:
 
         for hex_value, hash_file, processor in self._cache.values():
             if hash_file._actions.save:
+                # Store the old option to not break configurations before overriding `save_hashes`.
+                old_option = hash_file._option.save_hashes
+
+                # Set options to ignore generating hash from hash_file.
+                hash_file._option.save_hashes = False
+
                 # If file is CHECKSUM.<hasher_name> we not allow to overwrite.
                 hash_file._option.allow_overwrite = (
                     False if hash_file.meta.checksum else overwrite
                 )
                 hash_file._option.allow_update = overwrite
                 hash_file.save()
+
+                # Restore old option
+                hash_file._option.save_hashes = old_option
