@@ -62,11 +62,13 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         This method will save data in the following attributes of `file_object`:
         - path (sanitized path)
+        - save_to
+        - relative_path
         - filename
         - extension
         - _meta (compressed, lossless)
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
 
         # As this extractor don`t guarantee that the file actually exists we don`t mark it
         as saved.
@@ -82,10 +84,14 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         file_system_handler: Type[StorageEngine] = file_object.storage
 
-        # Set-up save_to and relative_path
         file_object.save_to = file_system_handler.get_directory_from_path(
             file_object.path
         )
+        # Set-up save_to and relative_path only if not already set-up.
+        # The `save_to` and `relative_path` can be set-up at `__init__` by the
+        # PackageExtractor for internal files.
+        ## This IF fixes a bug with internal file where the filename wasn't processed correctly due to
+        ## full path of internal file not existing in storage.
 
         # Relative path is empty, because save_to is the whole directory
         file_object.relative_path = ""

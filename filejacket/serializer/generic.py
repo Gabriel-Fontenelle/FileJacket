@@ -351,8 +351,8 @@ class JSONSerializer:
 
         def fix_self_reference(instance: Any) -> None:
             """
-            Internal function to fix the references present in instance source that were not able to be
-            converted in decoder to allow the deserialization to finish.
+            Internal function to fix the references present in instance source that were not able to convert in decoder
+            to allow the deserialization to finish.
             """
             # Add the instance id to cache of inspections concluded to avoid calling fix_self_reference
             # again for object already inspect.

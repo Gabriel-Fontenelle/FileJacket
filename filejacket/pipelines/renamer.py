@@ -31,7 +31,6 @@ from uuid import uuid4
 # modules
 from .base import BaseRenamer
 
-
 __all__ = ["WindowsRenamer", "LinuxRenamer", "UniqueRenamer"]
 
 
