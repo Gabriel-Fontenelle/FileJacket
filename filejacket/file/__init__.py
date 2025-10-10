@@ -759,7 +759,7 @@ class BaseFile:
             )
 
     @property
-    def pipelines(self: BaseFile) -> list[tuple[str, Pipeline]]:
+    def pipelines(self: BaseFile) -> list[tuple[str, PipelineEngine]]:
         """
         Method to return a list of Pipelines available to the current object. Pipelines are instances that inherent
         from Pipeline class.
@@ -781,7 +781,7 @@ class BaseFile:
                 if attr == "related_file_object":
                     continue
 
-                if isinstance(value, Pipeline):
+                if isinstance(value, PipelineEngine):
                     pipelines.append((attr, value))
                 elif hasattr(value, "__serialize__"):
                     pipelines += recursively_get_pipelines_from_serializer(
@@ -823,10 +823,11 @@ class BaseFile:
 
         # Validate if path is really a directory. `is_dir` will convert the path to its absolute form before checking
         # to avoid a bug where `~/` is not interpreted as existing.
-        # This is verify implicitly if directory exists.
+        # This verifies implicitly if directories exists.
         if not self.storage.is_dir(self._save_to):
             raise ValueError(
-                "Attribute `save_to` informed for File must be an existing directory."
+                f"Attribute `save_to` informed for File must be an existing directory.\n"
+                f"Current `save_to`: `{self._save_to}`."
             )
 
     @property
