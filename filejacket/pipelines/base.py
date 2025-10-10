@@ -36,7 +36,6 @@ from ..exception import (
     ValidationError,
 )
 
-
 if TYPE_CHECKING:
     from ..file import BaseFile
 
@@ -46,6 +45,7 @@ __all__ = [
     "BaseExtractor",
     "BaseHasher",
     "BaseRenamer",
+    "BaseRender"
 ]
 
 
@@ -63,7 +63,7 @@ class BaseComparer:
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> None | bool:
         """
         Method used to check if two files are the same in memory using the File object.
-        This method must be overwrite on child class to work correctly.
+        This method must be overwritten on child class to work correctly.
         """
         raise NotImplementedError(
             "The method is_the_same needs to be overwrite on child class."
@@ -175,7 +175,7 @@ class BaseHasher:
         hash_instance: Any = cls.instantiate_hash()
 
         content_iterator: Iterator[
-            Sequence[object]
+            Sequence[bytes | str]
         ] | None = object_to_process.content_as_iterator
 
         if content_iterator is None:
@@ -188,7 +188,7 @@ class BaseHasher:
         )
         digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
 
-        # Change to lower case to make comparing of hashes case insensitive.
+        # Change to lower case to make comparing of hashes case-insensitive.
         return digested_hex_value.lower() == hex_value.lower()
 
     @classmethod
@@ -493,11 +493,11 @@ class BaseHasher:
         The processor for hasher uses only one object that must be settled through first argument
         or through key work `object`.
 
-        FUTURE CONSIDERATION: Making the pipeline multi thread or multi process will require that iterator of content
-        be a isolated copy of content to avoid race condition when using content where its provenience came from file
+        FUTURE CONSIDERATION: Making the pipeline multi thread or multiprocess will require that iterator of content
+        be an isolated copy of content to avoid race condition when using content where its provenience came from file
         pointer.
 
-        This processors return boolean to indicate that process was ran successfully.
+        These processors return boolean to indicate that process was ran successfully.
         """
         object_to_process: BaseFile = kwargs["object_to_process"]
         try_loading_from_file: bool = kwargs.get("try_loading_from_file", False)
@@ -561,12 +561,12 @@ class BaseHasher:
         full_check: bool = kwargs.pop("full_check", True)
         full_loop_check: bool = kwargs.pop("full_loop_check", False)
 
-        # Save current file system filejacket
+        # Save current file system file
         class_file_system_handler: Type[StorageEngine] = cls.file_system_handler
 
         cls.file_system_handler = object_to_process.storage
 
-        # Don't proceed if no path was setted.
+        # Don't proceed if no path was set.
         if not object_to_process.path:
             return False
 
@@ -592,7 +592,7 @@ class BaseHasher:
         # Add hash to file. The content will be obtained from file pointer.
         hash_file: BaseFile = object_to_process.__class__(
             path=hash_file_path,
-            extract_data_pipeline=Pipeline(
+            extract_data_pipeline=PipelineOrderedDependency(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                 "filejacket.pipelines.extractor.FileSystemDataExtractor",
@@ -611,7 +611,7 @@ class BaseHasher:
         hash_file._state.adding = False
         hash_file._actions.saved()
 
-        # Set-up the hex value and hash_file to hash content.
+        # Set up the hex value and hash_file to hash content.
         object_to_process.hashes[cls.hasher_name] = hex_value, hash_file, cls
 
         return True
