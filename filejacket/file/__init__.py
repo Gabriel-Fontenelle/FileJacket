@@ -834,6 +834,8 @@ class BaseFile:
     def sanitize_path(self: BaseFile) -> str:
         """
         Method to return as attribute full sanitized path of file.
+
+        TODO: Use the sanitize_path as the primary call instead of attribute path in extractors and renders.
         """
         save_to = self.save_to or ""
         relative_path = self.relative_path or ""
@@ -959,6 +961,61 @@ class BaseFile:
 
         return False
 
+    def add_partial_filename(self: BaseFile, complete_filename: str, enforce_mimetype: bool = False) -> bool:
+
+        # Check if there is known extension in complete_filename.
+        # This method break extract extension from filename and get check if it is valid, returning
+        # extension only if it is registered.
+        possible_extension, possible_partial = (
+            self.mime_type_handler.guess_partial_extension_from_filename(complete_filename)
+        )
+
+        if possible_extension:
+            # Enforce use of extension that match mimetype if `enforce_mimetype` is True.
+            # This will also override self.extension to use a new one still compatible with mimetype.
+            if enforce_mimetype and self.mime_type:
+                if possible_extension not in self.mime_type_handler.get_extensions(
+                    self.mime_type
+                ):
+                    return False
+
+            # Use first class BaseRenamer declared in pipeline because `prepare_filename` is a class method from base
+            # BaseRenamer class, and we don't require any other specialized methods from BaseRenamer children.
+            processor: object = self.rename_pipeline[0]
+            if not hasattr(processor, "prepare_filename"):
+                raise ImproperlyConfiguredPipeline(
+                    "The rename pipeline first processor class don't implement the "
+                    "method `prepare_filename`."
+                )
+
+            complete_extension = ".".join((possible_extension, possible_partial))
+
+            self.complete_filename_as_tuple = processor.prepare_filename(
+                complete_filename, complete_extension
+            )
+
+            # Save additional metadata to file.
+            if self.extension:
+                self._meta.compressed = self.mime_type_handler.is_extension_compressed(
+                    possible_extension
+                )
+                self._meta.lossless = self.mime_type_handler.is_extension_lossless(
+                    possible_extension
+                )
+                self._meta.packed = self.mime_type_handler.is_extension_packed(
+                    possible_extension
+                )
+
+                self._meta.partial = True
+
+            #  We don't list objects that partial, so we mark it as listed already.
+            if self._meta.packed:
+                self._actions.listed()
+
+            return True
+
+        return False
+
     def compare_to(self: BaseFile, *files: BaseFile) -> bool:
         """
         Method to run the pipeline, for comparing files.
@@ -1029,6 +1086,7 @@ class BaseFile:
         """
         if self._actions.hash:
             # If content is being changed a new hash need to be generated instead of load from hash files.
+            # If content was saved or loaded (not adding) it can be loaded from hash files.
             try_loading_from_file: bool = (
                 False if self._state.changing or force else self._actions.was_saved
             )
