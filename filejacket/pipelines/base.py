@@ -311,7 +311,7 @@ class BaseHasher:
         hash_file: BaseFile = object_to_process.__class__(
             path=f"{cls.file_system_handler.sanitize_path(object_to_process.save_to)}"
             f"{cls.file_system_handler.sep}{object_to_process.complete_filename}.{cls.hasher_name}",
-            extract_data_pipeline=Pipeline(
+            extract_data_pipeline=PipelineOrderedDependency(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             ),

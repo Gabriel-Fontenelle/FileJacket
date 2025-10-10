@@ -91,6 +91,13 @@ class ImageMetadataFromContentExtractor(BaseExtractor):
     be caught only in stack above.
     """
 
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FileSystemDataExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
+    """
+
     @classmethod
     def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
@@ -124,6 +131,13 @@ class DocumentMetadataFromContentExtractor(BaseExtractor):
     pyMuPDF can open.
     This class don't validate any extensions to see if it's document, so any exception that this class output will
     be caught only in stack above.
+    """
+
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FileSystemDataExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
     """
 
     @classmethod
@@ -168,6 +182,13 @@ class AudioMetadataFromContentExtractor(BaseExtractor):
     TinyTag.
     This class don't validate any extensions to see if it's audio, so any exception that this class output will
     be caught only in stack above.
+    """
+
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FileSystemDataExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
     """
 
     @classmethod

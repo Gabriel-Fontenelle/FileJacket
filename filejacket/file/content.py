@@ -678,7 +678,7 @@ class FilePacket:
     """
 
     # Pipelines
-    unpack_data_pipeline: Pipeline = Pipeline(
+    unpack_data_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor",
         "filejacket.pipelines.extractor.RarCompressedFilesFromPackageExtractor",
         "filejacket.pipelines.extractor.TarCompressedFilesFromPackageExtractor",
