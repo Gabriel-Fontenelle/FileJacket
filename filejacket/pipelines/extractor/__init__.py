@@ -16,6 +16,7 @@ from .external_data import (
 )
 from .package import (
     PackageExtractor,
+    PSDLayersFromPackageExtractor,
     SevenZipCompressedFilesFromPackageExtractor,
     RarCompressedFilesFromPackageExtractor,
     ZipCompressedFilesFromPackageExtractor,
@@ -42,6 +43,7 @@ __all__ = [
     "MimeTypeFromContentExtractor",
     "VideoMetadataFromContentExtractor",
     # Parsing from Package
+    "PSDLayersFromPackageExtractor",
     "SevenZipCompressedFilesFromPackageExtractor",
     "RarCompressedFilesFromPackageExtractor",
     "TarCompressedFilesFromPackageExtractor",
