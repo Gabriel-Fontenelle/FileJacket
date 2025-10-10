@@ -159,6 +159,32 @@ class BaseHasher:
     Cache of digested hashes for given objects filename.
     """
 
+    def __init__(self, **kwargs):
+        """
+        Method to use the class as an object for Pipeline that uses iterator for `content` instead of whole
+        `object_to_process`.
+
+        It will try to load from file if it already exists.
+        Kwargs available:
+            - object_to_process
+            - try_loading_from_file
+            - full_check
+            - full_loop_check
+        """
+        self.hash_instance = self.__class__.instantiate_hash()
+        self.hash_loaded_from_file = False
+
+        object_to_process: BaseFile = kwargs["object_to_process"]
+        try_loading_from_file: bool = kwargs.get("try_loading_from_file", False)
+
+        if try_loading_from_file:
+            # Check if there is already a hash previously loaded on file,
+            # so that we don't try to digest it again.
+            if self.__class__.hasher_name not in object_to_process.hashes:
+                # Check if hash loaded from file and if so exit with success.
+                if self.__class__.process_from_file(**kwargs):
+                    self.hash_loaded_from_file = True
+
     @classmethod
     def check_hash(cls, **kwargs: Any) -> bool | None:
         """
@@ -613,6 +639,36 @@ class BaseHasher:
 
         # Set up the hex value and hash_file to hash content.
         object_to_process.hashes[cls.hasher_name] = hex_value, hash_file, cls
+
+        return True
+
+    def process_block(self, block: bytes | str | None, encoding: str = 'utf-8', **kwargs: dict[str, Any]) -> None:
+        """
+        Method for processing the content from an instance of BaseHasher instead of class.
+        This method should be used with pipeline for content.
+        """
+        if not self.hash_loaded_from_file:
+            self.__class__.update_hash(self.hash_instance, block, encoding)
+
+    def finish_process(self, object_to_process: BaseFile, **kwargs: dict[str, Any]) -> bool:
+        """
+        Method for finish the processing of content from an instance of BaseHasher instead of class.
+        This method should be used with pipeline for content.
+        """
+        if not self.hash_loaded_from_file:
+            # Digest hash
+            digested_hex_value: str = self.__class__.digest_hex_hash(hash_instance=self.hash_instance)
+
+            # Add hash to file
+            hash_file: BaseFile = self.__class__.create_hash_file(
+                object_to_process, digested_hex_value
+            )
+
+            object_to_process.hashes[self.__class__.hasher_name] = (
+                digested_hex_value,
+                hash_file,
+                self.__class__,
+            )
 
         return True
 
