@@ -656,7 +656,7 @@ class FilenameFromURLExtractor(BaseExtractor):
         - extension
         - relative_path
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
         """
         if file_object.filename and not overrider:
             return

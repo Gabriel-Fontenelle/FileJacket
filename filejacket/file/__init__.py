@@ -590,7 +590,7 @@ class BaseFile:
     @property
     def content_as_iterator(self: BaseFile) -> Iterator[Sequence[bytes | str]] | None:
         """
-        Method to return as an attribute the content that was previous loaded as a buffer.
+        Method to return as an attribute the content that was previously loaded as a buffer.
         """
         if self._content is None:
             return None
@@ -661,6 +661,8 @@ class BaseFile:
         """
         Method to return as attribute the internal files that can be present in content.
         This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
         """
         if self._actions.list:
             # Reset internal files' dictionary while keeping historic.

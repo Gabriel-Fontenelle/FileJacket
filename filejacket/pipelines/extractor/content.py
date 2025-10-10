@@ -26,7 +26,6 @@ from io import StringIO
 from typing import TYPE_CHECKING, Any
 
 from filejacket.exception import OperationNotAllowed
-
 from ..base import BaseExtractor
 from ...adapters.image import WandImage
 from ...adapters.video import MoviePyVideo
