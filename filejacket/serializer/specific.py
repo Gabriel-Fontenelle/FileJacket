@@ -481,9 +481,12 @@ class TransmuterContentFiles(BaseTransmuter):
         transmuter_pipeline = TransmuterPipeline()
         transmuter_pipeline.serializer = self.serializer
 
+        transmuter_content = TransmuterContent()
+        transmuter_content.serializer = self.serializer
+
         return {
             "internal_files": {
-                key: self.serializer.serialize(value)
+                key: (self.serializer.serialize(value[0]), value[1], value[2])
                 for key, value in content_files["_internal_files"].items()
             },
             "unpack_data_pipeline": transmuter_pipeline.from_data(
@@ -502,14 +505,55 @@ class TransmuterContentFiles(BaseTransmuter):
 
         return FilePacket(
             _internal_files={
-                key: self.serializer.deserialize(value)
-                for key, value in value["internal_files"]
+                key: [self.serializer.deserialize(value[0]), value[1], value[2]]
+                for key, value in value["internal_files"].items()
             },
             unpack_data_pipeline=transmuter_pipeline.to_data(
                 value["unpack_data_pipeline"], reference=reference
             ),
             length=value["length"]
         )
+
+
+class TransmuterContentFilesReadonly(BaseTransmuter):
+    """
+    Transmuter class to handle the FilePacket object when is not needed to convert to data.
+    """
+
+    def from_data(self, value: FilePacket) -> dict[str, str | dict | list]:
+        """
+        Method to convert `value` to dict for serialization.
+        The history attribute of FilePacket will not be serialized.
+        """
+        # Case should cache convert to base64
+        content_files = value.__serialize__
+
+        transmuter_pipeline = TransmuterPipeline()
+        transmuter_pipeline.serializer = self.serializer
+
+        return {
+            "length": content_files["length"],
+            "unpack_data_pipeline": transmuter_pipeline.from_data(
+                content_files["unpack_data_pipeline"]
+            ),
+            "internal_files": {
+                key: (
+                    {
+                        "crc32": value[0].hashes["crc32"][0] if "crc32" in value[0].hashes else None,
+                        "length": value[1],
+                        "type": value[2],
+                    }
+                )
+                for key, value in content_files["_internal_files"].items()
+            },
+        }
+
+    def to_data(self, value: dict[str, Any], reference: BaseFile) -> FilePacket:
+        """
+        Method to reverse the conversion at `from_data` returning the default clear FilePacket.
+        """
+
+        return FilePacket()
 
 
 class TransmuterContent(BaseTransmuter):
@@ -690,17 +734,26 @@ class TransmuterContentBase64(BaseTransmuter):
         cache_helper_class = transmuter_class.to_data(cache_helper, reference=reference)
 
         # set content
-        cache_content = cache_helper(buffer_helper=buffer_object)
+        cache_content = cache_helper_class(buffer_helper=buffer_object)
         cache_content.content = content
 
         value.pop("cached")
 
+        buffer_data = {}
+
+        # Fix for when buffer comes from a content file not saved (Thumbnails or internal files).
+        if any(buffer):
+            buffer_data["buffer"] = reference.storage.open_file(path=buffer[0], mode=buffer[1])
+        else:
+            buffer_data["raw_value"] = content
+
         return FileContent(
             related_file_object=reference,
-            buffer=reference.storage.open_file(path=buffer[0], mode=buffer[1]),
             buffer_helper=buffer_object,
             _cached_content=cache_content,
-            cache_helper=cache_helper_class**value,
+            cache_helper=cache_helper_class,
+            **value,
+            **buffer_data
         )
 
 
@@ -735,8 +788,8 @@ class SerializerJsonMixin:
 class FileDictionarySerializer:
     """
     Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a Python dictionary.
-    This class was created with specificity in mind and would need to be override if the object to be serialized is
-    has a custom class based on BaseFile.
+    This class was created with specificity in mind and would need to be overridden if the object to be serialized is
+    having a custom class based on BaseFile.
     The content attribute will not be serialized.
     """
 
@@ -791,6 +844,7 @@ class FileDictionarySerializer:
         """
         Method to serialize the input `source`
         """
+
         return {
             "__source__": TransmuterClass().from_data(source.__class__),
             **{
@@ -818,12 +872,14 @@ class FileDictionarySerializer:
             data["storage"], reference=file_object
         )
 
+        keys = data.keys()
         # Fill content of file with deserialized objects
         kwargs = {
             attribute: getattr(cls, attribute).to_data(
                 value=data[attribute], reference=file_object
             )
             for attribute in cls.transmuters
+            if attribute in keys
         }
 
         file_object.__init__(**kwargs)
@@ -860,3 +916,13 @@ class FileWithContentJsonSerializer(
     has a custom class based on BaseFile.
     The content attribute will be serialized.
     """
+
+class FileDictionarySerializerReadonly(FileDictionarySerializer):
+    """
+
+    """
+    _content_files = TransmuterContentFilesReadonly()
+
+
+class FileJsonSerializerReadonly(SerializerJsonMixin, FileDictionarySerializerReadonly):
+    ...
