@@ -33,12 +33,10 @@ from os.path import (
     normpath,
 )
 from pathlib import Path, WindowsPath, PosixPath
-
 # third-party
 from typing import Any, Pattern
 
 from ..engines.storage import StorageEngine
-
 
 __all__ = [
     "WindowsFileSystem",
