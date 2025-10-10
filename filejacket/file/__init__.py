@@ -678,6 +678,27 @@ class BaseFile:
         return self._content_files.files()
 
     @property
+    def types(self: BaseFile) -> set[str]:
+        """
+        Method to return as attribute the types of internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        # Return only the list of types for the file objects.
+        return set(self._content_files.files_type() or [self.type])
+
+    @property
     def is_binary(self: BaseFile) -> bool | None:
         """
         Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
