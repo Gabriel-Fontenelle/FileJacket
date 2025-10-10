@@ -196,6 +196,13 @@ class FileSystemDataExtractor(BaseExtractor):
     Class that define the extraction of multiple information from filesystem for files.
     """
 
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FilenameAndExtensionFromPathExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
+    """
+
     @classmethod
     def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
