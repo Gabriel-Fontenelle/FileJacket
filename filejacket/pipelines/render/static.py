@@ -171,6 +171,64 @@ class DocumentFirstPageRender(BaseStaticRender):
         )
 
 
+class VectorRender(BaseStaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the representation of
+    vector image.
+    """
+
+    extensions: set[str] = {"svg"}
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
+        """
+        Method to render the image representation of the file_object.
+        This method will only use the first page of the documents.
+        """
+        image_engine: Type[ImageEngine] = kwargs.pop("image_engine")
+
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
+
+        buffer_content = file_object.content_as_buffer
+
+        if not buffer_content:
+            raise RenderError(
+                "There is no content in buffer format available to render."
+            )
+
+        buffer: BytesIO = BytesIO()
+
+        # Local import to avoid longer time to load FileJacket library.
+        import fitz
+        from reportlab.graphics import renderPDF
+        from svglib.svglib import load_svg_file, SvgRenderer
+
+        svg_root = load_svg_file(buffer_content)
+
+        # convert to a RLG drawing and after that to pdf
+        svgRenderer = SvgRenderer(path=None)
+        drawing = svgRenderer.render(svg_root)
+        pdf = renderPDF.drawToString(drawing)
+
+        # We use fitz from PyMuPDF to open the document.
+        # Because BufferedReader (default return for file_system.open) is not accept
+        # we need to consume to get its bytes as bytes are accepted as stream.
+        doc: fitz.mupdf.FzDocument = fitz.open(
+            stream=pdf,
+            filetype=file_object.extension,
+            # width and height are only used for content that requires rendering of vectors as `epub`.
+            width=defaults.width * 5,
+            height=defaults.height * 5,
+        )
+
+        for page in doc:
+            bitmap = page.get_pixmap(dpi=defaults.format_dpi)
+            # Save the image in buffer with Pillow.
+            bitmap.pil_save(fp=buffer, format=defaults.format)
+            buffer.seek(0)
             break
 
         # Resize image using the image_engine and default values.
