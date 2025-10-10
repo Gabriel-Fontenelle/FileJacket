@@ -1088,7 +1088,7 @@ class BaseFile:
             # If content is being changed a new hash need to be generated instead of load from hash files.
             # If content was saved or loaded (not adding) it can be loaded from hash files.
             try_loading_from_file: bool = (
-                False if self._state.changing or force else self._actions.was_saved
+                False if self._state.changing or force else self._actions.was_saved or not self._state.adding
             )
 
             # Reset `try_loading_from_file` in pipeline.
@@ -1127,7 +1127,7 @@ class BaseFile:
         Both the content and metadata will be reloaded from disk.
         """
         # Set-up pipeline to extract data from.
-        pipeline: Pipeline = Pipeline(
+        pipeline: PipelineEngine = PipelineOrderedDependency(
             "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
             "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             "filejacket.pipelines.extractor.FileSystemDataExtractor",
