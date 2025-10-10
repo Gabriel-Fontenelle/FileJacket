@@ -23,6 +23,7 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
+
 from ..engines.video import VideoEngine
 
 if TYPE_CHECKING:
@@ -91,7 +92,7 @@ class MoviePyVideo(VideoEngine):
         """
         Method to prepare the video using the stored buffer as the source.
         """
-        from moviepy.editor import VideoClip
+        from moviepy import VideoClip
         from imageio import imopen
 
         video_array: PluginV3 = imopen(self.source_buffer, io_mode="r", plugin="pyav")  # type: ignore
