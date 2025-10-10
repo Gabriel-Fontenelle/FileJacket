@@ -23,11 +23,10 @@ Should there be a need for contact the electronic mail
 # first-party
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import mimetypes
-from os.path import dirname, realpath, join, exists
 import re
+from os.path import dirname, realpath, join, exists
+from typing import TYPE_CHECKING
 
 from ..engines.mimetype import MimeTypeEngine
 
@@ -306,6 +305,20 @@ class LibraryMimeTyper(MimeTypeEngine):
             return maybe_extension
 
         return None
+
+    def guess_partial_extension_from_filename(self, filename: str) -> tuple[str | None, str | None]:
+        """
+        Method to get the best extension for given filename in case there are more than one extension
+        available using as base the filename that can or not have a registered extension in it.
+        This method should be for filenames that have a possibility to be from a partial file.
+        """
+        splitted: list[str] = filename.rsplit(".", 2)
+        maybe_extension: str = splitted[int(len(splitted) == 3)]
+
+        if maybe_extension and self.is_extension_registered(maybe_extension):
+            return maybe_extension, splitted[-1]
+
+        return None, None
 
     def is_extension_registered(self, extension: str) -> bool:
         """
