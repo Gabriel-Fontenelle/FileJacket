@@ -84,24 +84,26 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         file_system_handler: Type[StorageEngine] = file_object.storage
 
-        file_object.save_to = file_system_handler.get_directory_from_path(
-            file_object.path
-        )
         # Set-up save_to and relative_path only if not already set-up.
         # The `save_to` and `relative_path` can be set-up at `__init__` by the
         # PackageExtractor for internal files.
         ## This IF fixes a bug with internal file where the filename wasn't processed correctly due to
         ## full path of internal file not existing in storage.
+        if file_object.relative_path is None and file_object.save_to is None:
+            file_object.save_to = file_system_handler.get_directory_from_path(
+                file_object.path
+            )
 
-        # Relative path is empty, because save_to is the whole directory
-        file_object.relative_path = ""
+            # Relative path is empty, because save_to is the whole directory
+            file_object.relative_path = ""
 
         # Get complete filename from path
         complete_filename = file_system_handler.get_filename_from_path(file_object.path)
 
         # Check if there is any extension in complete_filename and if there is known extension
-        if "." in complete_filename and file_object.add_valid_filename(
-            complete_filename
+        if "." in complete_filename and (
+            file_object.add_valid_filename(complete_filename)
+            or file_object.add_partial_filename(complete_filename)
         ):
             return
 
@@ -167,8 +169,9 @@ class FilenameFromMetadataExtractor(BaseExtractor):
                 complete_filename = candidate[begin:end]
 
                 # Check if filename has a valid extension
-                if "." in complete_filename and file_object.add_valid_filename(
-                    complete_filename
+                if "." in complete_filename and (
+                    file_object.add_valid_filename(complete_filename)
+                    or file_object.add_partial_filename(complete_filename)
                 ):
                     return
 
