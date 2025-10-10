@@ -191,6 +191,15 @@ class ImageEngine:
 
         return int(ratio[0] * a * size), int(b * ratio[1] * size)
 
+    def get_sequence_images(self) -> list:
+        """
+        Method to obtain the images in a sequence.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_size should be override in child class."
+        )
+
     def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.

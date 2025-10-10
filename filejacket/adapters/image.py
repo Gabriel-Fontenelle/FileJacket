@@ -22,9 +22,11 @@ Should there be a need for contact the electronic mail
 """
 # python internals
 from __future__ import annotations
-from io import BytesIO
 
+from io import BytesIO
 from typing import Any, Type, Iterator, TYPE_CHECKING
+
+from wand.sequence import Sequence
 
 # modules
 from ..engines.image import ImageEngine
@@ -489,6 +491,15 @@ class WandImage(ImageEngine):
         Method to obtain the bytes' representation for the content of the current image object.
         """
         return self.image.make_blob(encode_format)
+
+    def get_sequence_images(self) -> list:
+        """
+        Method to obtain the images in a sequence.
+        """
+        if self.has_sequence():
+            return Sequence(self.image)
+
+        return [self.image]
 
     def get_size(self) -> tuple[int, int]:
         """
