@@ -56,6 +56,10 @@ class FileMetadata:
     """
     Indicate whether an object is a file from a packed container or not.
     """
+    partial: bool = False
+    """
+    Indicate whether an object is a partial file of a large file.
+    """
 
     # Hasher files
     loaded: bool
