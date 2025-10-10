@@ -25,8 +25,8 @@ from __future__ import annotations
 from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
-from .. import Pipeline
 from ..base import BaseRender
+from ... import PipelineSequential
 from ...exception import RenderError
 
 if TYPE_CHECKING:
@@ -41,6 +41,7 @@ __all__ = [
     "ImageRender",
     "PSDRender",
     "BaseStaticRender",
+    "VectorRender",
     "VideoRender",
 ]
 
@@ -59,11 +60,34 @@ class BaseStaticRender(BaseRender):
         """
         defaults: Type[ThumbnailDefaults] = object_to_process._thumbnail.static_defaults
 
+        default_filename = (
+            f"-{defaults.filename}-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+            if defaults.filename else
+            f"-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+        )
+        save_to = object_to_process.save_to
+        if object_to_process.meta.internal:
+            path = object_to_process.storage.join(
+                object_to_process.save_to, f"{object_to_process.relative_path}{default_filename}"
+            )
+            relative_path = object_to_process.storage.get_directory_from_path(object_to_process.relative_path)
+        else:
+            path = f"{object_to_process.sanitize_path}-{default_filename}"
+            relative_path = object_to_process.storage.get_directory_from_path(
+                object_to_process.sanitize_path
+            ).replace(save_to, "")
+
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
-        static_file: BaseFile = object_to_process.__class__(
-            path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
-            extract_data_pipeline=Pipeline(
+        file_class = object_to_process.__class__
+        # passthrough options available in class for BaseFile,
+        # to allow customization to also be available in new file.
+        file_class._option = object_to_process._option
+        static_file: BaseFile = file_class(
+            path=path,
+            save_to=save_to,
+            relative_path=relative_path,
+            extract_data_pipeline=PipelineSequential(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             ),
@@ -130,6 +154,23 @@ class DocumentFirstPageRender(BaseStaticRender):
             # Save the image in buffer with Pillow.
             bitmap.pil_save(fp=buffer, format=defaults.format)
             buffer.seek(0)
+            break
+
+        # Resize image using the image_engine and default values.
+        image: ImageEngine = image_engine(buffer=buffer)
+
+        # Trim white space originated from epub.
+        image.trim(color=defaults.color_to_trim)
+
+        # Resize
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._static_file = cls.create_file(
+            file_object, content=image.get_buffer(encode_format=defaults.format)
+        )
+
+
             break
 
         # Resize image using the image_engine and default values.
