@@ -25,15 +25,16 @@ from __future__ import annotations
 import itertools
 from typing import Any, Type, TYPE_CHECKING
 
-from ..exception import SerializerError
 from ..adapters.image import WandImage
-from ..pipelines import Pipeline
-from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
+from ..adapters.pipeline import PipelineSequential
 from ..adapters.video import MoviePyVideo
+from ..exception import SerializerError
+from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
 
 if TYPE_CHECKING:
     from . import BaseFile
     from ..engines.image import ImageEngine
+    from ..engines.pipeline import PipelineEngine
     from ..adapters.video import VideoEngine
 
 __all__ = [
@@ -195,17 +196,18 @@ class FileThumbnail:
     """
 
     # Pipelines
-    render_static_pipeline: Pipeline = Pipeline(
+    render_static_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.render.static.DocumentFirstPageRender",
         "filejacket.pipelines.render.static.ImageRender",
         "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
         "filejacket.pipelines.render.static.VideoRender",
     )
     """
     Pipeline to render thumbnail representation from multiple source. For it to work, its classes should implement 
     stopper as True.
     """
-    render_animated_pipeline: Pipeline = Pipeline(
+    render_animated_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.render.animated.StaticAnimatedRender",
         "filejacket.pipelines.render.animated.ImageAnimatedRender",
         "filejacket.pipelines.render.animated.PSDAnimatedRender",

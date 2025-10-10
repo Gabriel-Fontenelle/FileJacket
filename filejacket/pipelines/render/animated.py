@@ -26,7 +26,7 @@ from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
 from ..base import BaseRender
-from .. import Pipeline
+from ...adapters.pipeline import PipelineOrderedDependency
 from ...exception import RenderError
 
 if TYPE_CHECKING:

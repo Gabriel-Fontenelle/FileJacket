@@ -24,15 +24,15 @@ from __future__ import annotations
 
 from base64 import b64decode
 from datetime import datetime, time
-from typing import Any, Type, TYPE_CHECKING
 from importlib import import_module
+from typing import Any, Type, TYPE_CHECKING
 
 from filejacket.exception import SerializerError
 from filejacket.file.content import FileContent, FilePacket
 from filejacket.file.hasher import FileHashes
 from filejacket.file.thumbnail import FileThumbnail
-
-from ..pipelines import Pipeline
+from ..adapters.pipeline import PipelineOrderedDependency
+from ..engines.pipeline import PipelineEngine
 
 if TYPE_CHECKING:
     from ..file import BaseFile
@@ -153,7 +153,7 @@ class TransmuterPipeline(BaseTransmuter):
     Transmuter class to handle Pipeline objects.
     """
 
-    def from_data(self, value: Pipeline) -> dict[str, str | list[str]]:
+    def from_data(self, value: PipelineEngine) -> dict[str, str | list[str]]:
         """
         Method to convert `value` to dict for serialization.
         """
@@ -166,7 +166,7 @@ class TransmuterPipeline(BaseTransmuter):
             "processors_candidate": value.processors_candidate,
         }
 
-    def to_data(self, value: dict[str, Any], reference: BaseFile) -> Pipeline:
+    def to_data(self, value: dict[str, Any], reference: BaseFile) -> PipelineEngine:
         """
         Method to reverse the conversion at `from_data`.
         """
@@ -437,7 +437,7 @@ class TransmuterHashes(BaseTransmuter):
                 # Add hash to file
                 hash_file: BaseFile = cache_file_class(
                     path=hash_tuple[1]["path"],
-                    extract_data_pipeline=Pipeline(
+                    extract_data_pipeline=PipelineOrderedDependency(
                         "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                         "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                     ),

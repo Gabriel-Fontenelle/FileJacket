@@ -24,13 +24,11 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import logging
-from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence, Pattern
 from io import BytesIO, StringIO
-
-# core modules
-from . import Pipeline
+from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence, Pattern
 
 # modules
+from ..adapters.pipeline import PipelineOrderedDependency
 from ..engines.storage import StorageEngine
 from ..exception import (
     ImproperlyConfiguredFile,

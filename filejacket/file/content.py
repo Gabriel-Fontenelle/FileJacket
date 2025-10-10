@@ -26,7 +26,9 @@ from base64 import b64encode
 from io import StringIO, BytesIO
 from typing import Iterator, Any, TYPE_CHECKING, IO
 
+from ..adapters.pipeline import PipelineSequential
 from ..adapters.storage import LinuxFileSystem
+from ..engines.pipeline import PipelineEngine
 from ..exception import (
     CacheContentNotSeekableError,
     OperationNotAllowed,
@@ -34,7 +36,6 @@ from ..exception import (
     EmptyContentError,
     ImproperlyConfiguredFile,
 )
-from ..pipelines import Pipeline
 from ..pipelines.extractor.package import PackageExtractor
 
 if TYPE_CHECKING:

@@ -36,6 +36,10 @@ from .name import FileNaming
 from .option import FileOption
 from .state import FileState
 from .thumbnail import FileThumbnail
+from ..adapters.mimetype import LibraryMimeTyper
+from ..adapters.pipeline import PipelineSequential, PipelineOrderedDependency, PipelineContent
+from ..adapters.storage import LinuxFileSystem, WindowsFileSystem
+from ..engines.pipeline import PipelineEngine
 from ..exception import (
     ImproperlyConfiguredFile,
     ImproperlyConfiguredPipeline,
@@ -46,10 +50,7 @@ from ..exception import (
     ValidationError,
 )
 from ..handler import URI
-from ..adapters.mimetype import LibraryMimeTyper
-from ..pipelines import Pipeline
 from ..serializer import JSONSerializer
-from ..adapters.storage import LinuxFileSystem, WindowsFileSystem
 
 if TYPE_CHECKING:
     from io import BytesIO, StringIO
@@ -60,7 +61,7 @@ if TYPE_CHECKING:
     from ..pipelines.extractor.package import PackageExtractor
 
 
-__all__ = ["BaseFile", "ContentFile", "File", "StreamFile"]
+__all__ = ["BaseFile"]
 
 
 class BaseFile:
@@ -105,8 +106,9 @@ class BaseFile:
     """
     relative_path: str | None = None
     """
-    Relative path to save file. This path will be use for generating whole path together with save_to and 
-    complete_filename (e.g save_to + relative_path + complete_filename). 
+    Relative path to save file. This path will be use for generating whole path together with `save_to` and 
+    `complete_filename` (e.g save_to + relative_path + complete_filename). This path is useful for internal files
+    where the full path don't exist outside the file package yet (during the assemble of the internal file). 
     """
 
     # Metadata data
@@ -167,14 +169,14 @@ class BaseFile:
     """
 
     # Pipelines
-    extract_data_pipeline: Pipeline
+    extract_data_pipeline: PipelineEngine
     extract_data_pipeline = None
     """
     Pipeline to extract data from multiple sources. This should be override at child class. This pipeline can be 
     non-blocking and errors that occur in it will be available through attribute `errors` at 
     `extract_data_pipeline.errors`.
     """
-    compare_pipeline: Pipeline = Pipeline(
+    compare_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.comparer.TypeCompare",
         "filejacket.pipelines.comparer.SizeCompare",
         "filejacket.pipelines.comparer.BinaryCompare",
@@ -184,14 +186,14 @@ class BaseFile:
     """
     Pipeline to compare two files.
     """
-    hasher_pipeline: Pipeline = Pipeline(
+    hasher_pipeline: PipelineEngine = PipelineContent(
         ("filejacket.pipelines.hasher.MD5Hasher", {"full_check": True}),
         ("filejacket.pipelines.hasher.SHA256Hasher", {"full_check": True}),
     )
     """
     Pipeline to generate hashes from content.
     """
-    rename_pipeline: Pipeline = Pipeline("filejacket.pipelines.renamer.WindowsRenamer")
+    rename_pipeline: PipelineEngine = PipelineSequential("filejacket.pipelines.renamer.WindowsRenamer")
     """
     Pipeline to rename file when saving. This pipeline can be 
     non-blocking and errors that occur in it will be available through attribute `errors` at 

@@ -32,8 +32,8 @@ from zipfile import BadZipFile, ZipFile
 from rarfile import BadRarFile, RarFile, NotRarFile
 
 from ..base import BaseExtractor
-from .. import Pipeline
 from ..hasher import CRC32Hasher
+from ...adapters.pipeline import PipelineSequential
 from ...exception import ValidationError
 from ...utils import LazyImportClass
 
