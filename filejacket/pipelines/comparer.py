@@ -61,7 +61,7 @@ class DataCompare(BaseComparer):
         to is_binary, thus use it after SizeCompare and BinaryCompare.
 
         Because the content buffers can have difference in sizes, we should make use
-        of a additional buffer to save parts of content to compare. Using the lower size of buffer
+        of an additional buffer to save parts of content to compare. Using the lower size of buffer
         between the two files.
         """
 
@@ -180,7 +180,7 @@ class HashCompare(BaseComparer):
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if hashes are the same.
+        This method check if hashes are the same.
         """
         if not file_1.hashes or not file_2.hashes:
             return None
