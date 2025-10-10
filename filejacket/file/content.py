@@ -660,7 +660,7 @@ class FilePacket:
     TODO: Reduce memory usage for listing File from buffer.
     """
     
-    _internal_files: dict[str, tuple[BaseFile, int]]
+    _internal_files: dict[str, tuple[BaseFile, int, str]]
     """
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.

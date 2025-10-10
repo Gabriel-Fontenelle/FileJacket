@@ -657,7 +657,7 @@ class BaseFile:
         return self._content.content_as_base64
 
     @property
-    def files(self: BaseFile) -> set[BaseFile]:
+    def files(self: BaseFile) -> list[BaseFile]:
         """
         Method to return as attribute the internal files that can be present in content.
         This method can be override in child class, and it should always return a generator.
