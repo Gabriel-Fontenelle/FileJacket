@@ -219,7 +219,7 @@ class FileThumbnail:
     implement stopper as True.
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self: FileThumbnail, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -232,7 +232,7 @@ class FileThumbnail:
                 )
 
     @property
-    def __serialize__(self) -> dict[str, Any]:
+    def __serialize__(self: FileThumbnail) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
@@ -253,7 +253,7 @@ class FileThumbnail:
         return {key: getattr(self, key) for key in attributes}
 
     @property
-    def thumbnail(self) -> BaseFile:
+    def thumbnail(self: FileThumbnail) -> BaseFile:
         """
         Method to compose the cover for the file, also known as thumbnail.
         This method should return only one image.
@@ -272,7 +272,7 @@ class FileThumbnail:
         return self._static_file
 
     @property
-    def preview(self) -> BaseFile:
+    def preview(self: FileThumbnail) -> BaseFile:
         """
         Method to compose the preview animated for the file.
         This method should return only one animated image.
@@ -290,14 +290,14 @@ class FileThumbnail:
 
         return self._animated_file
 
-    def _conclude_static_action(self) -> None:
+    def _conclude_static_action(self: FileThumbnail) -> None:
         """
         Method to apply the action related with generating a static thumbnail file.
         As convention this method should be considered private and not called outside internal use.
         """
         self.related_file_object._actions.thumbnailed()
 
-    def _conclude_animated_action(self) -> None:
+    def _conclude_animated_action(self: FileThumbnail) -> None:
         """
         Method to apply the action related with generating an animate preview file.
         As convention this method should be considered private and not called outside internal use.
@@ -305,7 +305,7 @@ class FileThumbnail:
         self.related_file_object._actions.previewed()
 
     def _generate_file(
-        self, defaults: Type[ThumbnailDefaults], name: str = "static"
+        self: FileThumbnail, defaults: Type[ThumbnailDefaults], name: str = "static"
     ) -> None:
         """
         Method to process a list of files in order to generate thumbnail's or previews' files.
@@ -374,7 +374,7 @@ class FileThumbnail:
         getattr(self, f"_conclude_{name}_action")()
 
     def _get_files_to_process(
-        self, defaults: Type[ThumbnailDefaults]
+        self: FileThumbnail, defaults: Type[ThumbnailDefaults]
     ) -> list[BaseFile]:
         """
         Method to obtain the list of files to process considering if current related file object is a package with
@@ -397,7 +397,7 @@ class FileThumbnail:
 
         return files
 
-    def clean_history(self) -> None:
+    def clean_history(self: FileThumbnail) -> None:
         """
         Method to clean the history of file thumbnail.
         The data will still be in memory while the Garbage Collector don't remove it.
@@ -407,7 +407,7 @@ class FileThumbnail:
             "_animated_file": [],
         }
 
-    def display_image(self) -> None:
+    def display_image(self: FileThumbnail) -> None:
         """
         Method to debug the current static image showing it with the available image engine.
         This method make use of property thumbnail to generate the thumbnail image if not
@@ -418,7 +418,7 @@ class FileThumbnail:
             image = self.image_engine(buffer=buffer)
             image.show()
 
-    def display_animation(self) -> None:
+    def display_animation(self: FileThumbnail) -> None:
         """
         Method to debug the current animated image showing it with the available image engine.
         This method make use of property preview to generate the thumbnail image if not
