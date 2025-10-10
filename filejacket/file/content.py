@@ -513,11 +513,11 @@ class FileContent:
         return not seekable and not self.cached
 
     @property
-    def cached(self):
+    def cached(self) -> bool:
         """
         Method to verify if content was cached based on the attribute `cached` in `_cached_content`.
         """
-        return self._cached_content and self._cached_content.cached
+        return bool(self._cached_content and self._cached_content.cached)
 
     @property
     def content(self) -> bytes | str | None:
@@ -666,7 +666,7 @@ class FilePacket:
     the package.
     This must be instantiated at `__init__` method.
     """
-    
+
     history: list
     history = None
     """
@@ -732,7 +732,7 @@ class FilePacket:
             )
         length = len(value)
         self.length += length
-        self._internal_files[key] = value, length
+        self._internal_files[key] = value, length, value.type
 
     def __len__(self: FilePacket) -> int:
         """
@@ -775,7 +775,13 @@ class FilePacket:
         Method to obtain the list of length of File stored at `_internal_files`.
         """
         return [i[1] for i in self._internal_files.values()]
-    
+
+    def files_type(self: FilePacket) -> list[str]:
+        """
+        Method to obtain the list of File's type stored at `_internal_files`.
+        """
+        return [i[2] for i in self._internal_files.values()]
+
     def names(self: FilePacket) -> list[str]:
         """
         Method to obtain the list of names of internal files stored at `_internal_files`.
