@@ -28,7 +28,7 @@ from io import BytesIO, StringIO
 from typing import Any, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..pipelines.extractor.package import PackageExtractor
+    from ..pipelines.base import  BasePackager
 
 __all__ = [
     "ImageEngine",
@@ -57,7 +57,7 @@ class ImageEngine:
     """
 
     def __init__(
-        self, buffer: StringIO | BytesIO | PackageExtractor.ContentBuffer | None = None
+        self, buffer: StringIO | BytesIO | BasePackager.ContentBuffer | None = None
     ) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source

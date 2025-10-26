@@ -24,7 +24,7 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import logging
-from io import BytesIO, StringIO
+from io import BytesIO, StringIO, IOBase
 from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence, Pattern
 
 # modules
@@ -671,6 +671,229 @@ class BaseHasher:
             )
 
         return True
+
+
+class BasePackager:
+    """
+    Extractor class with focus to processing information from file's content.
+    This class was created to allow parsing and extraction of data designated to
+    internal files.
+    """
+
+    extensions: set[str]
+    extensions = None
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    This attribute should be override in children classes.
+    """
+    compressor_class: Type[type]
+    compressor_class = None
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
+    This attribute should be override in children classes.
+    """
+    stopper: bool = True
+    """
+    Variable that define if this class used as processor should stop the pipeline.
+    """
+
+    class ContentBuffer(IOBase):
+        """
+        Class to allow consumption of buffer in a lazy way.
+        This class should be override in children of BasePackager to
+        implementation of method read().
+        """
+
+        source_file_object: BaseFile
+        source_file_object = None
+        """
+        Attribute to store the related file object that has the buffer for the compressed content.
+        """
+        compressor: Type[type]
+        compressor = None
+        """
+        Attribute to store the class of the compressor able to uncompress the content.  
+        """
+        compressed_object: Any
+        compressed_object = None
+        """
+        Attribute to store the instance of the compressor.
+        """
+        filename: str
+        filename = None
+        """
+        Attribute to store the name of file that should be extract for this content.
+        """
+        mode: str
+        mode = None
+        """
+        Attribute to store the mode of read for the uncompressed content. 
+        """
+
+        reference_class: Type[BasePackager]
+        reference_class = None
+        """
+        Attribute to allow serialization of this  class as local class.
+        """
+
+        buffer: Any
+        """
+        Attribute to store the current initialized buffer.
+        """
+
+        def __init__(
+                self: BasePackager.ContentBuffer,
+                source_file_object: BaseFile,
+                compressor_class: Type[type],
+                internal_file_filename: str,
+                mode: str,
+                reference: Type[BasePackager],
+        ) -> None:
+            """
+            Method to initiate the object saving the data required to allow decompressing and reading content
+            for specific file.
+            """
+            self.source_file_object = source_file_object
+            self.compressor = compressor_class
+            self.filename = internal_file_filename
+            self.mode = mode
+            self.reference = reference
+
+        def read(
+                self: BasePackager.ContentBuffer, *args: Any, **kwargs: Any
+        ) -> str | bytes:
+            """
+            Method to read the content of the object initiating the buffer if not exists.
+            """
+            if not hasattr(self, "buffer"):
+                # Instantiate the buffer of inner content
+                self.mount_buffer()
+
+            return self.buffer.read(*args, **kwargs)
+
+        def mount_buffer(self: BasePackager.ContentBuffer) -> None:
+            """
+            Method to initiate the buffer object if not exists.
+            This method should be overwritten in child class.
+            """
+            raise NotImplementedError(
+                f"Method mount_buffer of BasePackager.ContentBuffer should be override in child class "
+                f"{self.__class__.__name__}."
+            )
+
+        def seek(self, *args: Any, **kwargs: Any) -> int:
+            """
+            Method to seek the content in the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                # Initiate the buffer
+                # It will begin extraction of file to have access to its buffer.
+                self.mount_buffer()
+
+            return self.buffer.seek(*args, **kwargs)
+
+        def seekable(self) -> bool:
+            """
+            Method to verify if buffer is seekable.
+            Buffer must exist for this method to work, else no action will be taken.
+
+            For better performance this method should be override in child class to avoid using buffer, as it extract the content
+            in memory.
+            """
+            if not hasattr(self, "buffer"):
+                # Initiate the buffer
+                # It will begin extraction of file to have access to its buffer.
+                self.mount_buffer()
+
+            return self.buffer.seekable()
+
+        def close(self) -> None:
+            """
+            Method to close the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                return
+
+            self.buffer.close()
+            delattr(self, "buffer")
+
+    @classmethod
+    def content_buffer(
+            cls, file_object: BaseFile, internal_file_name: str, mode: str = "rb"
+    ) -> ContentBuffer:
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        This method must be override in child class.
+        """
+        raise NotImplementedError(
+            "Method content_buffer must be overwritten on child class."
+        )
+
+    @classmethod
+    def decompress(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> bool:
+        """
+        Method to uncompress the content from a file_object.
+        This method must be override in child class.
+        """
+        raise NotImplementedError(
+            "Method extract_content must be overwritten on child class."
+        )
+
+    @classmethod
+    def extract(
+        cls, file_object: BaseFile, overrider: bool, **kwargs: Any
+    ) -> bool:
+        """
+        Method to extract the information necessary from a file_object.
+        This method must be override in child class.
+        """
+        raise NotImplementedError("Method extract must be overwritten on child class.")
+
+    @classmethod
+    def validate(cls, file_object: BaseFile) -> None:
+        """
+        Method to validate if content can be extract to given extension.
+        """
+        if cls.extensions is None:
+            raise NotImplementedError(
+                f"The attribute `extensions` is not overwritten in child class {cls.__name__}"
+            )
+
+        if cls.compressor_class is None:
+            raise NotImplementedError(
+                f"The attribute `compressor_class` is not overwritten in child class {cls.__name__}"
+            )
+
+        # The ValidationError should be captured in children classes else it will not register as an error and
+        # the pipeline will break.
+        if file_object.extension not in cls.extensions:
+            raise ValidationError(
+                f"Extension `{file_object.extension}` not allowed in validate for class {cls.__name__}"
+            )
+
+    @classmethod
+    def process(cls, **kwargs: Any) -> bool:
+        """
+        Method used to run this class on Processor`s Pipeline for Extracting info from Data.
+        This process method is created exclusively to pipeline for objects inherent from BaseFile.
+
+        The processor for package extraction override the method `BaseExtractor.process` in order to validate
+        the extension before processing the `object_to_process`.
+        """
+        try:
+            object_to_process: BaseFile = kwargs["object_to_process"]
+            cls.validate(file_object=object_to_process)
+        except (ValidationError, KeyError):
+            return False
+
+        overrider: bool = kwargs.pop(
+            "overrider", object_to_process._option.allow_override
+        )
+
+        return cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
 
 
 class BaseRenamer:

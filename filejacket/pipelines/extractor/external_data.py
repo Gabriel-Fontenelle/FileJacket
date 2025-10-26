@@ -86,7 +86,7 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         # Set-up save_to and relative_path only if not already set-up.
         # The `save_to` and `relative_path` can be set-up at `__init__` by the
-        # PackageExtractor for internal files.
+        # BasePackager for internal files.
         ## This IF fixes a bug with internal file where the filename wasn't processed correctly due to
         ## full path of internal file not existing in storage.
         if file_object.relative_path is None and file_object.save_to is None:

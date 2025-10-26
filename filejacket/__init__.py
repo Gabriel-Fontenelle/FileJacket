@@ -47,6 +47,7 @@ from .pipelines.base import (
     BaseComparer,
     BaseExtractor,
     BaseHasher,
+    BasePackager,
     BaseRenamer,
     BaseRender,
 )
@@ -63,7 +64,6 @@ from .pipelines.comparer import (
 )
 # Module with pipeline classes for extracting data for files from multiple sources.
 from .pipelines.extractor import (
-    PackageExtractor,
     FileSystemDataExtractor,
     FilenameAndExtensionFromPathExtractor,
     MimeTypeFromFilenameExtractor,
@@ -102,7 +102,7 @@ __all__ = [
     "BaseFile",
     "BinaryCompare",
     "BaseComparer",
-    "PackageExtractor",
+    "BasePackager",
     "ContentFile",
     "CRC32Hasher",
     "DataCompare",

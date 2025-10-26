@@ -23,13 +23,13 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import itertools
-from typing import Any, Type, TYPE_CHECKING
+from typing import Any, Type, TYPE_CHECKING, Iterator
 
 from ..adapters.image import WandImage
 from ..adapters.pipeline import PipelineSequential
 from ..adapters.video import MoviePyVideo
 from ..exception import SerializerError
-from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
+from ..pipelines.packager import PSDLayersFromPackageExtractor
 
 if TYPE_CHECKING:
     from . import BaseFile
