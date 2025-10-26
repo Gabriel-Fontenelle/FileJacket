@@ -375,7 +375,7 @@ class FileThumbnail:
 
     def _get_files_to_process(
         self: FileThumbnail, defaults: Type[ThumbnailDefaults]
-    ) -> list[BaseFile]:
+    ) -> Iterator[BaseFile]:
         """
         Method to obtain the list of files to process considering if current related file object is a package with
         internal files or not.
@@ -389,13 +389,13 @@ class FileThumbnail:
             first, second = itertools.tee(self.related_file_object.files, 2)
             try:
                 next(second)
-                files = list(first)
+                files = first
             except StopIteration:
-                files = [self.related_file_object]
+                files = {self.related_file_object}
         else:
-            files = [self.related_file_object]
+            files = {self.related_file_object}
 
-        return files
+        return iter(files)
 
     def clean_history(self: FileThumbnail) -> None:
         """
