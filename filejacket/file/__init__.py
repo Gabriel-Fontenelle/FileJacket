@@ -445,6 +445,12 @@ class BaseFile:
         """
         return True
 
+    def __hash__(self: BaseFile):
+        """
+
+        """
+        return id(self)
+
     @property
     def __version__(self: BaseFile) -> str:
         """
