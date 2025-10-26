@@ -142,11 +142,11 @@ class FileHashes:
         """
         self.history: dict[str, list[str]] = {}
 
-    def keys(self) -> set:
+    def keys(self) -> Iterator[str]:
         """
-        Method to return the keys availabke at `_cache`.
+        Method to return the keys available at `_cache`.
         """
-        return set(self._cache.keys())
+        return map(lambda x: str(x), self._cache.keys())
 
     def rename(self, new_filename) -> None:
         """

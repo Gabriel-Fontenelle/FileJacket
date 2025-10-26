@@ -783,29 +783,29 @@ class FilePacket:
         """
         self.history = []
 
-    def files(self: FilePacket) -> list[BaseFile]:
+    def files(self: FilePacket) -> Iterator[BaseFile]:
         """
-        Method to obtain the list of objects File stored at `_internal_files`.
+        Method to obtain the generator for the list of objects File stored at `_internal_files`.
         """
-        return [i[0] for i in self._internal_files.values()]
+        return map(lambda x: x[0], self._internal_files.values())
     
-    def files_length(self: FilePacket) -> list[int]:
+    def files_length(self: FilePacket) -> Iterator[int]:
         """
-        Method to obtain the list of length of File stored at `_internal_files`.
+        Method to obtain the generator for the list of length of File stored at `_internal_files`.
         """
-        return [i[1] for i in self._internal_files.values()]
+        return map(lambda x: x[1], self._internal_files.values())
 
-    def files_type(self: FilePacket) -> list[str]:
+    def files_type(self: FilePacket) -> Iterator[str]:
         """
-        Method to obtain the list of File's type stored at `_internal_files`.
+        Method to obtain the generator for the list of File's type stored at `_internal_files`.
         """
-        return [i[2] for i in self._internal_files.values()]
+        return map(lambda x: x[2], self._internal_files.values())
 
-    def names(self: FilePacket) -> list[str]:
+    def names(self: FilePacket) -> Iterator[str]:
         """
         Method to obtain the list of names of internal files stored at `_internal_files`.
         """
-        return list(self._internal_files.keys())
+        return map(lambda x: str(x), self._internal_files.keys())
 
     def reset(self: FilePacket) -> None:
         """
