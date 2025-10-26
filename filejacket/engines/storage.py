@@ -525,7 +525,8 @@ class StorageEngine:
     @classmethod
     def get_charset(cls, path: str) -> str | None:
         """
-        Method to get the charset from a given file."""
+        Method to get the charset from a given file.
+        """
         guessed = from_path(path).best()
 
         if not guessed:
