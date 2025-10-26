@@ -268,6 +268,13 @@ class MastrokaFilesFromPackageExtractor(PackageExtractor):
     """
 
 
+class PDFPagesFromPackageExtractor(PackageExtractor):
+    """
+    Class to extract internal files from PDF files.
+    """
+
+
+
 class PSDLayersFromPackageExtractor(PackageExtractor):
     """
     Class to extract internal files from PSD files.
@@ -317,7 +324,7 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
                 Method to verify if buffer is seekable.
                 This method override the default behavior for better performance to avoid extracting the self.filename.
                 
-                Because the layer must be extracted to a auxiliary buffer it will always be seekable.
+                Because the layer must be extracted to an auxiliary buffer it will always be seekable.
                 """                
                 return True
 
@@ -376,6 +383,7 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
         try:
             file_system: Type[StorageEngine] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
+            file_class._option = file_object._option
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
@@ -397,15 +405,19 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
                     path=file_system.join(
                         file_object.save_to, file_object.filename, filename
                     ),
-                    extract_data_pipeline=Pipeline(
+                    extract_data_pipeline=PipelineSequential(
                         "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                         "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                     ),
                     file_system_handler=file_system,
                 )
 
-                # Update size of file
-                internal_file_object.length = getsizeof(internal_file.tobytes())
+                # Update size of file based on the memory imprint for the layer and not the actual
+                # rasterized image. To obtain the rasterized image we would use internal_file.topil()
+                internal_file_object.length = getsizeof(internal_file)
+
+                # Set the type for internal file.
+                internal_file_object.type = "image"
 
                 # Set up action to be extracted instead of to save.
                 internal_file_object._actions.to_extract()
@@ -571,6 +583,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
         try:
             file_system: Type[StorageEngine] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
+            file_class._option = file_object._option
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
@@ -596,7 +609,9 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Create file object for internal file
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, filename),
-                        extract_data_pipeline=Pipeline(
+                        save_to=file_object.save_to,
+                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                        extract_data_pipeline=PipelineSequential(
                             "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                             "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                         ),
@@ -769,6 +784,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
         try:
             file_system: Type[StorageEngine] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
+            file_class._option = file_object._option
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
@@ -794,7 +810,9 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Create file object for internal file
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, filename),
-                        extract_data_pipeline=Pipeline(
+                        save_to=file_object.save_to,
+                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                        extract_data_pipeline=PipelineSequential(
                             "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                             "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                         ),
@@ -873,7 +891,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
         This method must work lazily, extracting the content only when the buffer is read.
         """
 
-        class RarContentBuffer(PackageExtractor.ContentBuffer):
+        class RarContentBuffer(cls.ContentBuffer):
             """
             Class to allow consumption of buffer in a lazy way.
             """
@@ -903,9 +921,10 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                 """                
                 if not self.compressed_object:
                     self.mount_compressed_object()
-                
-                return self.compressed_object.seekable()
-            
+
+                # `_rarfile` is the same as the `self.source_file_object.content_as_buffer`
+                return self.compressed_object._rarfile.seekable()
+
         return RarContentBuffer(
             file_object, cls.compressor_class, internal_file_name, mode, cls
         )
@@ -967,6 +986,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
         try:
             file_system: Type[StorageEngine] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
+            file_class._option = file_object._option
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
@@ -978,7 +998,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.is_dir() or internal_file.is_symlink():
                         continue
 
-                    # Skip inexisting filename if for some reason there is one.
+                    # Skip unexisting filename if for some reason there is one.
                     if not internal_file.filename:
                         continue
 
@@ -992,7 +1012,9 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Create file object for internal file
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, filename),
-                        extract_data_pipeline=Pipeline(
+                        save_to=file_object.save_to,
+                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                        extract_data_pipeline=PipelineSequential(
                             "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                             "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                         ),
@@ -1176,6 +1198,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             file_system: Type[StorageEngine] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
+            file_class._option = file_object._option
             
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
@@ -1203,7 +1226,9 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Create file object for internal file
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, filename),
-                        extract_data_pipeline=Pipeline(
+                        save_to=file_object.save_to,
+                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                        extract_data_pipeline=PipelineSequential(
                             "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                             "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                         ),
