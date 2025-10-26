@@ -14,18 +14,9 @@ from .external_data import (
     FilenameFromURLExtractor,
     PathFromURLExtractor,
 )
-from .package import (
-    PackageExtractor,
-    PSDLayersFromPackageExtractor,
-    SevenZipCompressedFilesFromPackageExtractor,
-    RarCompressedFilesFromPackageExtractor,
-    ZipCompressedFilesFromPackageExtractor,
-    TarCompressedFilesFromPackageExtractor,
-)
+
 
 __all__ = [
-    # Parent classes
-    "PackageExtractor",
     # Parsing from storage
     "FileSystemDataExtractor",
     "FilenameAndExtensionFromPathExtractor",
@@ -42,10 +33,4 @@ __all__ = [
     "DocumentMetadataFromContentExtractor",
     "MimeTypeFromContentExtractor",
     "VideoMetadataFromContentExtractor",
-    # Parsing from Package
-    "PSDLayersFromPackageExtractor",
-    "SevenZipCompressedFilesFromPackageExtractor",
-    "RarCompressedFilesFromPackageExtractor",
-    "TarCompressedFilesFromPackageExtractor",
-    "ZipCompressedFilesFromPackageExtractor",
 ]

@@ -72,14 +72,19 @@ from .pipelines.extractor import (
     PathFromURLExtractor,
     FilenameFromMetadataExtractor,
     MetadataExtractor,
-    SevenZipCompressedFilesFromPackageExtractor,
     AudioMetadataFromContentExtractor,
-    RarCompressedFilesFromPackageExtractor,
-    ZipCompressedFilesFromPackageExtractor,
     MimeTypeFromContentExtractor,
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
 from .pipelines.hasher import CRC32Hasher, MD5Hasher, SHA256Hasher
+# Module wih pipeline classes for packagins files.
+from .pipelines.packager import (
+    PSDLayersFromPackageExtractor,
+    SevenZipCompressedFilesFromPackageExtractor,
+    RarCompressedFilesFromPackageExtractor,
+    TarCompressedFilesFromPackageExtractor,
+    ZipCompressedFilesFromPackageExtractor,
+)
 # Module with pipeline classes for renaming files.
 from .pipelines.renamer import WindowsRenamer, LinuxRenamer, UniqueRenamer
 # module with pipeline classes for render content representation.
