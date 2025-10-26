@@ -723,13 +723,13 @@ class FilePacket:
                     f"Class {self.__class__.__name__} doesn't have an attribute called {key}."
                 )
 
-    def __getitem__(self: FilePacket, item: int | str) -> tuple[BaseFile, int]:
+    def __getitem__(self: FilePacket, item: int | str) -> tuple[BaseFile, int, str]:
         """
         Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
         This method will try to retrieve an element from the dictionary by index if item is numeric.
         """
         if isinstance(item, int):
-            return list(self.files())[item]
+            return list(map(lambda x: x[1], self.__iter__()))[item]
 
         return self._internal_files[item]
 
