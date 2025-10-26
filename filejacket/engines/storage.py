@@ -309,7 +309,7 @@ class StorageEngine:
         if cls.exists(file_path_origin) and (
             not cls.exists(file_path_destination) or force
         ):
-            if cls.exists(cls.get_parent_directory_from_path(file_path_destination)):
+            if cls.exists(cls.get_directory_from_path(file_path_destination)):
                 move(file_path_origin, file_path_destination)
                 return True
 
