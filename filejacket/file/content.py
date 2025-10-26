@@ -374,7 +374,7 @@ class FileContent:
         | bytes
         | BytesIO
         | StringIO
-        | PackageExtractor.ContentBuffer
+        | BasePackager.ContentBuffer
         | None = None,
         force: bool = False,
         **kwargs: Any,

@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     from ..serializer import PickleSerializer
     from ..adapters.mimetype import MimeTypeEngine
     from ..adapters.storage import StorageEngine
-    from ..pipelines.extractor.package import PackageExtractor
+    from ..pipelines.base import  BasePackager
 
 
 __all__ = ["BaseFile"]
@@ -600,7 +600,7 @@ class BaseFile:
     @property
     def content_as_buffer(
         self: BaseFile,
-    ) -> BytesIO | StringIO | PackageExtractor.ContentBuffer | None:
+    ) -> BytesIO | StringIO | BasePackager.ContentBuffer | None:
         """
         Method to return the current content as buffer to be used for extraction or other code
         that require IO objects.
@@ -612,7 +612,7 @@ class BaseFile:
 
     @content_as_buffer.setter
     def content_as_buffer(
-        self: BaseFile, value: BytesIO | StringIO | PackageExtractor.ContentBuffer
+        self: BaseFile, value: BytesIO | StringIO | BasePackager.ContentBuffer
     ) -> None:
         if isinstance(value, (str, bytes)):
             raise ValueError(
