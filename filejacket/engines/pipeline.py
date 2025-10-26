@@ -32,7 +32,6 @@ from ..exception import (
     PipelineError,
     ImproperlyConfiguredFile,
 )
-from ..file.option import FileOption
 
 if TYPE_CHECKING:
     from ..file import BaseFile
@@ -264,9 +263,9 @@ class PipelineEngine:
 
         This method evaluate the processors.
         """
-
-        if not hasattr(object_to_process, "_option") or not issubclass(
-            object_to_process._option.__class__, FileOption
+        if not hasattr(object_to_process, "_option") or (
+            "FileOption" != object_to_process._option.__class__.__name__
+            and "FileOption" not in (base.__name__ for base in object_to_process._option.__class__.__bases__)
         ):
             raise ImproperlyConfiguredFile(
                 f"Object {type(object_to_process)} don`t have a option attribute of instance"
