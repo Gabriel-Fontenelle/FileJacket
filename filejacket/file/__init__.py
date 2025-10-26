@@ -25,7 +25,7 @@ from __future__ import annotations
 # first-party
 from datetime import datetime
 from os import name
-from typing import Type, Any, Iterator, TYPE_CHECKING, Sequence
+from typing import Type, Any, Iterator, TYPE_CHECKING
 
 # modules
 from .action import FileActions
@@ -588,7 +588,7 @@ class BaseFile:
             self._actions.to_list()
 
     @property
-    def content_as_iterator(self: BaseFile) -> Iterator[Sequence[bytes | str]] | None:
+    def content_as_iterator(self: BaseFile) -> Iterator[bytes | str] | None:
         """
         Method to return as an attribute the content that was previously loaded as a buffer.
         """
@@ -668,7 +668,7 @@ class BaseFile:
         return self._content.content_as_str
 
     @property
-    def files(self: BaseFile) -> list[BaseFile]:
+    def files(self: BaseFile) -> Iterator[BaseFile]:
         """
         Method to return as attribute the internal files that can be present in content.
         This method can be override in child class, and it should always return a generator.
