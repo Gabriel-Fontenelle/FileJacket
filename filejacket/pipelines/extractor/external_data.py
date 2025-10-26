@@ -29,7 +29,7 @@ from typing import Any, TYPE_CHECKING, Type, IO
 from ..base import BaseExtractor
 
 if TYPE_CHECKING:
-    from io import BytesIO, StringIO
+    from io import BytesIO
 
     from ...file import BaseFile
     from ...engines.storage import StorageEngine
@@ -263,19 +263,12 @@ class FileSystemDataExtractor(BaseExtractor):
                 file_object.path
             )
 
-        # Define mode from file type
-        mode: str = "rb"
-        encoding: str | None = None
-
-        if file_object.type == "text":
-            # Find charset for non unicode files
-            encoding = file_object.storage.get_charset(file_object.path)
-            mode = "r"
-
         # Get buffer io with disable parse of newline. It is important to allow hash from text content to be the same
         # as the saved file.
-        buffer: BytesIO | StringIO | IO = file_object.storage.open_file(
-            file_object.path, mode=mode, encoding=encoding, disable_newline_parse=True
+        # Always load file as binary even if mimetype is for text to avoid error when trying to produce the correct
+        # hash representation.
+        buffer: BytesIO | IO = file_object.storage.open_file(
+            file_object.path, mode="rb", encoding=None, disable_newline_parse=True
         )
 
         # Set content with buffer, as content is a property it will validate the buffer and

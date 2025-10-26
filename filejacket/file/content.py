@@ -26,6 +26,8 @@ from base64 import b64encode
 from io import StringIO, BytesIO
 from typing import Iterator, Any, TYPE_CHECKING, IO
 
+from charset_normalizer import from_bytes
+
 from ..adapters.pipeline import PipelineSequential
 from ..adapters.storage import LinuxFileSystem
 from ..engines.pipeline import PipelineEngine
@@ -36,7 +38,7 @@ from ..exception import (
     EmptyContentError,
     ImproperlyConfiguredFile,
 )
-from ..pipelines.extractor.package import PackageExtractor
+from ..pipelines.base import BasePackager
 
 if TYPE_CHECKING:
     from . import BaseFile
@@ -59,26 +61,29 @@ class BufferStr:
     encoding: str = "utf-8"
     newline: str | None = ""
 
-    @classmethod
-    def to_bytes(cls, value: str) -> bytes:
+    def to_bytes(self, value: str) -> bytes:
         """
         Method to convert the value to bytes.
         """
-        return value.encode(cls.encoding)
+        return value.encode(self.encoding)
 
-    @classmethod
-    def to_base64(cls, value: str) -> bytes:
+    def to_str(self, value: str) -> str:
+        """
+        Method to convert the value to str.
+        """
+        return value
+
+    def to_base64(self, value: str) -> str:
         """
         Method to convert the value to representation of Base64 in string ASCII.
         """
-        return b64encode(cls.to_bytes(value)).decode("ascii")
+        return b64encode(self.to_bytes(value)).decode("ascii")
 
-    @classmethod
-    def to_buffer(cls, value: str) -> StringIO:
+    def to_buffer(self, value: str) -> StringIO:
         """
         Method to initialize the buffer to handle string.
         """
-        return cls.buffer_class(value)
+        return self.buffer_class(value)
 
 
 class BufferBytes:
@@ -91,29 +96,35 @@ class BufferBytes:
     write_mode: str = "b"
     buffer_class: type = BytesIO
     binary: bool = True
-    encoding: str = "utf-8"
+    encoding: str | None = None
     newline: str | None = None
 
-    @classmethod
-    def to_bytes(cls, value: bytes) -> bytes:
+    def to_bytes(self, value: bytes) -> bytes:
         """
         Method to convert the value to bytes.
         """
         return value
 
-    @classmethod
-    def to_base64(cls, value: bytes) -> bytes:
+    def to_str(self, value: bytes) -> str:
+        """
+        Method to convert the value to str.
+        """
+        if self.encoding is None:
+            self.encoding = getattr(from_bytes(value).best(), "encoding", None)
+
+        return value.decode(encoding=self.encoding)
+
+    def to_base64(self, value: bytes) -> str:
         """
         Method to convert the value to representation of Base64 in string ASCII.
         """
-        return b64encode(cls.to_bytes(value)).decode("ascii")
+        return b64encode(self.to_bytes(value)).decode("ascii")
 
-    @classmethod
-    def to_buffer(cls, value: bytes) -> BytesIO:
+    def to_buffer(self, value: bytes) -> BytesIO:
         """
         Method to initialize the buffer to handle bytes.
         """
-        return cls.buffer_class(value)
+        return self.buffer_class(value)
 
 
 class CacheInFile:
@@ -389,7 +400,7 @@ class FileContent:
         if not raw_value:
             raise ValueError("Value pass to FileContent must not be empty!")
 
-        # Binary value of related_file_object should be be set up here, as it came from attribute is_binary from
+        # Binary value of related_file_object should be set up here, as it came from attribute is_binary from
         # content.
         if isinstance(raw_value, str):
             # Convert raw content to buffer
@@ -575,6 +586,14 @@ class FileContent:
             return self.buffer
 
     @property
+    def content_as_str(self) -> str | None:
+        """
+        Method to obtain the content as string.
+        This method should not be used to convert a content buffered and not cached to str.
+        """
+        return self.buffer_helper.to_str(self.content)
+
+    @property
     def content_as_bytes(self) -> bytes | None:
         """
         Method to obtain the content as bytes.
@@ -741,7 +760,7 @@ class FilePacket:
         """
         return len(self._internal_files)
 
-    def __iter__(self: FilePacket) -> Iterator[tuple[BaseFile, int]]:
+    def __iter__(self: FilePacket) -> Iterator[tuple[str, tuple[BaseFile, int, str]]]:
         """
         Method to return current object as iterator. As it already implements __next__ we just return the current
         object.

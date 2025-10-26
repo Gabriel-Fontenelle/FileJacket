@@ -624,7 +624,7 @@ class BaseFile:
         loading_content: bool = self._content is None
 
         try:
-            self._content = FileContent(value, related_file_object=self)
+            self._content = FileContent(raw_value=value, related_file_object=self)
 
         except ValueError:
             return
@@ -655,6 +655,17 @@ class BaseFile:
             return None
 
         return self._content.content_as_base64
+
+    @property
+    def content_as_str(self: BaseFile) -> str | None:
+        """
+        Method to return the current content as string.
+        This method will load the content to memory before trying to convert to str.
+        """
+        if self._content is None:
+            return None
+
+        return self._content.content_as_str
 
     @property
     def files(self: BaseFile) -> list[BaseFile]:
