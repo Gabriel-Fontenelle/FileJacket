@@ -33,10 +33,11 @@ __all__: list[str] = [
     "NoInternalContentError",
     "OperationNotAllowed",
     "PipelineError",
-    "ValidationError",
-    "ReservedFilenameError",
     "RenderError",
+    "ReservedFilenameError",
     "SerializerError",
+    "StopPipeline",
+    "ValidationError",
 ]
 
 
@@ -110,6 +111,12 @@ class RenderError(Exception):
 class PipelineError(Exception):
     """
     Exception that defines error for when trying to render a file.
+    """
+
+
+class StopPipeline(Exception):
+    """
+    Exception that defines a stop to the pipeline being run.
     """
 
 
