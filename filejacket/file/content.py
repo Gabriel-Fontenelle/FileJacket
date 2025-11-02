@@ -698,10 +698,10 @@ class FilePacket:
 
     # Pipelines
     unpack_data_pipeline: PipelineEngine = PipelineSequential(
-        "filejacket.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.RarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.TarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.ZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor",
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
