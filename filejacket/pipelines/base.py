@@ -852,6 +852,119 @@ class BasePackager:
         raise NotImplementedError("Method extract must be overwritten on child class.")
 
     @classmethod
+    def extract_as_generator(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> Iterator[BaseFile]:
+        """
+        Method to extract the information necessary from a file_object interactable.
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        for filename, internal_file_object in cls.iterate_internal_files(file_object, overrider=overrider, **kwargs):
+            # Add internal file as File object to file.
+            file_object._content_files[filename] = internal_file_object
+
+            yield internal_file_object
+
+        # Update metadata and actions.
+        file_object.meta.packed = True
+        file_object._actions.listed()
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+
+        This method must be override in child class.
+        """
+        raise NotImplementedError("Method iterate_buffer must be overwritten on child class.")
+
+    @classmethod
+    def iterate_internal_files(
+        cls,
+        file_object: BaseFile,
+        overrider: bool,
+        **kwargs: Any
+    ) -> Iterator[tuple[str, BaseFile]]:
+        """
+        Method to iterate through the package yielding the filename and internal file created in memory.
+        """
+        file_system: Type[StorageEngine] = file_object.storage
+        file_class: Type[BaseFile] = file_object.__class__
+        file_class._option = file_object._option
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        for (
+            filename, length, create_date, update_date, checksum, checksum_keyword, checksum_class
+        ) in cls.iterate_package(file_object):
+            # Skip duplicate only if not choosing to override.
+            if filename in file_object._content_files and not overrider:
+                continue
+
+            # Create file object for internal file
+            internal_file_object = file_class(
+                path=file_system.join(file_object.save_to, filename),
+                save_to=file_object.save_to,
+                relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                extract_data_pipeline=PipelineSequential(
+                    "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+                    "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+                ),
+                file_system_handler=file_system,
+            )
+
+            # Update creation and modified date
+            if create_date:
+                internal_file_object.create_date = create_date
+            if update_date:
+                internal_file_object.update_date = update_date
+
+            # Update size of file
+            if length:
+                internal_file_object.length = length
+
+            if checksum:
+                # Update hash generating the hash file and adding its content
+                hash_file = checksum_class.create_hash_file(
+                    object_to_process=internal_file_object,
+                    digested_hex_value=checksum,
+                )
+                internal_file_object.hashes[checksum_keyword] = (
+                    checksum,
+                    hash_file,
+                    checksum_class,
+                )
+
+            # Set up action to be extracted instead of to save.
+            internal_file_object._actions.to_extract()
+
+            # Set mode to binary as default
+            mode: str = "rb"
+
+            # Set up content pointer to internal file using content_buffer
+            internal_file_object.content_as_buffer = cls.content_buffer(
+                file_object=file_object, internal_file_name=filename, mode=mode
+            )
+
+            # Set up metadata for internal file
+            internal_file_object.meta.hashable = False
+            internal_file_object.meta.internal = True
+
+            yield filename, internal_file_object
+
+    @classmethod
     def validate(cls, file_object: BaseFile) -> None:
         """
         Method to validate if content can be extract to given extension.
@@ -895,6 +1008,17 @@ class BasePackager:
         return cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
         result = cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
         raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+    @classmethod
+    def process_as_generator(cls, **kwargs: Any) -> Iterator[Any]:
+        object_to_process: BaseFile = kwargs["object_to_process"]
+        cls.validate(file_object=object_to_process)
+
+        overrider: bool = kwargs.pop(
+            "overrider", object_to_process._option.allow_override
+        )
+
+        return cls.extract_as_generator(file_object=object_to_process, overrider=overrider, **kwargs)
 
 
 class BaseRenamer:
