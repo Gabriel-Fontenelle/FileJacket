@@ -496,7 +496,7 @@ class FileContent:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {
+        attributes = (
             "buffer",
             "buffer_helper",
             "cache_helper",
@@ -505,7 +505,7 @@ class FileContent:
             "_buffer_encoding",
             "cached",
             "_cached_content",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 
@@ -772,7 +772,7 @@ class FilePacket:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_internal_files", "unpack_data_pipeline", "history", "length"}
+        attributes = ("_internal_files", "unpack_data_pipeline", "history", "length")
 
         return {key: getattr(self, key) for key in attributes}
 
