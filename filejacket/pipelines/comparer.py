@@ -319,7 +319,6 @@ class TypeCompare(BaseComparer):
         if file_1.type is None or file_2.type is None:
             return None
 
-        return file_1.type == file_2.type
         result = file_1.type == file_2.type
 
         if not result:
