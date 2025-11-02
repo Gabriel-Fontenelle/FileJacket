@@ -319,7 +319,7 @@ class FileThumbnail:
         """
 
         # Obtain the current list of files that could be used for generating previews.
-        files: list[BaseFile] = self._get_files_to_process(defaults)
+        files: Iterator[BaseFile] = self._get_files_to_process(defaults)
 
         to_be_processed: list[BaseFile] = []
 
@@ -385,11 +385,20 @@ class FileThumbnail:
             self.related_file_object.meta.packed
             and self.related_file_object.extension not in defaults.packed_to_ignore
         ):
+            # We use the file_object._content_files instead of file_object.files to avoid listing all content
+            # preferring using the generator.
+
+            iterate_files = (
+                self.related_file_object._content_files.files()
+                if self.related_file_object._content_files.length
+                else self.related_file_object.files_as_generator
+            )
+
             # Check if there is an element in iterator, else the self.related_file_object will be used.
-            first, second = itertools.tee(self.related_file_object.files, 2)
+            first_iterator, cloned_iterator = itertools.tee(iterate_files, 2)
             try:
-                next(second)
-                files = first
+                next(cloned_iterator)
+                files = first_iterator
             except StopIteration:
                 files = {self.related_file_object}
         else:

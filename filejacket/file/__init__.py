@@ -416,11 +416,6 @@ class BaseFile:
         """
         Method to allow comparison not equal to work between BaseFiles.
         """
-        if not isinstance(other_instance, BaseFile):
-            raise NotImplementedError(
-                f"The {type(other_instance)} was not implemented to compare."
-            )
-
         return not self.__eq__(other_instance)
 
     def __gt__(self: BaseFile, other_instance: BaseFile) -> bool:
@@ -695,7 +690,24 @@ class BaseFile:
         return self._content_files.files()
 
     @property
-    def types(self: BaseFile) -> set[str]:
+    def files_as_generator(self: BaseFile) -> Iterator[BaseFile]:
+        """
+        Method to obtain the files of internal files as iterator generated directly from the buffer.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            for internal_file in self._content_files.unpack_data_pipeline.run_as_generator(object_to_process=self):
+                # Return only the list of file objects and not filename and file objects.
+                yield internal_file
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+    @property
+    def types(self: BaseFile) -> Iterator[str]:
         """
         Method to return as attribute the types of internal files that can be present in content.
         This method can be override in child class, and it should always return a generator.
@@ -714,6 +726,10 @@ class BaseFile:
 
         # Return only the list of types for the file objects.
         return set(self._content_files.files_type() or [self.type])
+        if len(self._content_files) > 0:
+            return self._content_files.files_type()
+
+        return iter({self.type})
 
     @property
     def is_binary(self: BaseFile) -> bool | None:
@@ -785,7 +801,7 @@ class BaseFile:
         in it and its attributes (when those are custom classes).
         """
 
-        def recursively_get_pipelines_from_serializer(source_dict: dict = {}):
+        def recursively_get_pipelines_from_serializer(source_dict: dict) -> list:
             """
             Inner function to recursively get attributes from __serialize__ and verify if it has
             instances of Pipeline.
