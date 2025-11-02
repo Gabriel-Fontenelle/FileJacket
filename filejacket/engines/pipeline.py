@@ -294,3 +294,56 @@ class PipelineEngine:
         self.processors_ran = ran
         self.last_result = result
         self.errors = errors_found
+
+    def run_as_generator(self, object_to_process: BaseFile, **parameters: Any) -> Iterator[Any]:
+        if not hasattr(object_to_process, "_option") or (
+            "FileOption" != object_to_process._option.__class__.__name__
+            and "FileOption" not in (base.__name__ for base in object_to_process._option.__class__.__bases__)
+        ):
+            raise ImproperlyConfiguredFile(
+                f"Object {type(object_to_process)} don`t have a option attribute of instance"
+                "FileOption to allow the pipeline to run properly."
+            )
+
+        pipeline_raises_exception = object_to_process._option.pipeline_raises_exception
+
+        # For each processor
+        ran: int = 0
+        result: bool | None = None
+        errors_found: list = []
+
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
+
+        # Using iter here allow for override of __iter__ to affect the running process.
+        for processor in self.__iter__():
+            try:
+                generator = processor.process_as_generator(
+                    object_to_process=object_to_process, **parameters
+                )
+                for element in generator:
+                    yield element
+
+                ran += 1
+
+            except StopPipeline as e:
+                # If processor is a step that should stop the whole pipeline it will
+                # raise the StopPipeline exception
+                result = e.args[1]
+                break
+
+            except ValidationError:
+                """As process_as_generator don't catch the validation error, we ignore it here."""
+
+            except Exception as e:
+                message = f"An error occurred while running process {type(processor)}: {e}"
+
+                if pipeline_raises_exception:
+                    raise PipelineError(message) from e
+
+                errors_found.append(message)
+
+        # register statical data about pipelines.
+        self.processors_ran = ran
+        self.last_result = result
+        self.errors = errors_found

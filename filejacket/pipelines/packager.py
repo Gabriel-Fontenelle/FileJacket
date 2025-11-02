@@ -26,19 +26,17 @@ from datetime import datetime
 from io import BytesIO
 from sys import getsizeof
 from tarfile import TarFile, TarError
-from typing import Any, TYPE_CHECKING, Type, IO
+from typing import Any, TYPE_CHECKING, Type, IO, Iterator
 from zipfile import BadZipFile, ZipFile
 
 from rarfile import BadRarFile, RarFile, NotRarFile
 
 from .base import BasePackager
 from .hasher import CRC32Hasher
-from ..adapters.pipeline import PipelineSequential
 from ..utils import LazyImportClass
 
 if TYPE_CHECKING:
     from ..file import BaseFile
-    from ..engines.storage import StorageEngine
     from psd_tools import PSDImage
     from py7zr import SevenZipFile, FileInfo
 
@@ -61,7 +59,6 @@ class PDFPagesFromPackageExtractor(BasePackager):
     """
     Class to extract internal files from PDF files.
     """
-
 
 
 class PSDLayersFromPackageExtractor(BasePackager):
@@ -156,6 +153,9 @@ class PSDLayersFromPackageExtractor(BasePackager):
                         path=path, content=buffer, file_mode="w", write_mode="b"
                     )
 
+            # Remove from memory
+            del compressed_file
+
         except (OSError, ValueError):
             return False
 
@@ -170,58 +170,13 @@ class PSDLayersFromPackageExtractor(BasePackager):
             return False
 
         try:
-            file_system: Type[StorageEngine] = file_object.storage
-            file_class: Type[BaseFile] = file_object.__class__
-            file_class._option = file_object._option
-
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            compressed_object: PSDImage = cls.compressor_class.open(
-                fp=file_object.content_as_buffer
-            )
-
-            for index, internal_file in enumerate(compressed_object):
-                filename: str = (
-                    f"{index}-{internal_file.name or internal_file.layer_id}.psd"
-                )
-
-                # Skip duplicate only if not choosing to override.
-                if filename in file_object._content_files and not overrider:
-                    continue
-
-                # Create file object for internal file
-                internal_file_object = file_class(
-                    path=file_system.join(
-                        file_object.save_to, file_object.filename, filename
-                    ),
-                    extract_data_pipeline=PipelineSequential(
-                        "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
-                        "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
-                    ),
-                    file_system_handler=file_system,
-                )
-
-                # Update size of file based on the memory imprint for the layer and not the actual
-                # rasterized image. To obtain the rasterized image we would use internal_file.topil()
-                internal_file_object.length = getsizeof(internal_file)
-
+            for filename, internal_file_object in cls.iterate_internal_files(
+                file_object, overrider=overrider, **kwargs
+            ):
                 # Set the type for internal file.
                 internal_file_object.type = "image"
-
-                # Set up action to be extracted instead of to save.
-                internal_file_object._actions.to_extract()
-
-                # Set mode
-                mode: str = "rb"
-
-                # Set up content pointer to internal file using content_buffer
-                internal_file_object.content_as_buffer = cls.content_buffer(
-                    file_object=file_object, internal_file_name=filename, mode=mode
-                )
-
-                # Set up metadata for internal file
-                internal_file_object.meta.hashable = False
-                internal_file_object.meta.internal = True
 
                 # Add internal file as File object to file.
                 file_object._content_files[filename] = internal_file_object
@@ -234,6 +189,65 @@ class PSDLayersFromPackageExtractor(BasePackager):
             return False
 
         return True
+
+    @classmethod
+    def extract_as_generator(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> Iterator[BaseFile]:
+        """
+        Method to extract the information necessary from a file_object interactable.
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        for filename, internal_file_object in cls.iterate_internal_files(file_object, overrider=overrider, **kwargs):
+            # Set the type for internal file.
+            internal_file_object.type = "image"
+
+            # Add internal file as File object to file.
+            file_object._content_files[filename] = internal_file_object
+
+            yield internal_file_object
+
+        # Update metadata and actions.
+        file_object.meta.packed = True
+        file_object._actions.listed()
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        compressed_object: PSDImage = cls.compressor_class.open(
+            fp=file_object.content_as_buffer
+        )
+
+        for index, internal_file in enumerate(compressed_object):
+            yield (
+                # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                f"{index}-{internal_file.name or internal_file.layer_id}.psd",
+                getsizeof(internal_file),
+                None,
+                None,
+                None,
+                None,
+                None
+            )
+
+        # Remove from memory
+        del compressed_object
 
 
 class TarCompressedFilesFromPackageExtractor(BasePackager):
@@ -370,84 +384,13 @@ class TarCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         try:
-            file_system: Type[StorageEngine] = file_object.storage
-            file_class: Type[BaseFile] = file_object.__class__
-            file_class._option = file_object._option
-
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor_class(
-                fileobj=file_object.content_as_buffer
-            ) as compressed_object:  # type: ignore
-                for internal_file in compressed_object.getmembers():
-                    # Skip directories
-                    if internal_file.isdir():
-                        continue
-
-                    # Skip inexisting filename if for some reason there is one.
-                    if not internal_file.name:
-                        continue
-
-                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
-                    filename: str = str(internal_file.name)
-
-                    # Skip duplicate only if not choosing to override.
-                    if filename in file_object._content_files and not overrider:
-                        continue
-
-                    # Create file object for internal file
-                    internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, filename),
-                        save_to=file_object.save_to,
-                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
-                        extract_data_pipeline=PipelineSequential(
-                            "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
-                            "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
-                        ),
-                        file_system_handler=file_system,
-                    )
-
-                    # Update creation and modified date. As mtime is a integer in TarFile we should convert it to
-                    # datetime.
-                    internal_file_object.create_date = datetime.fromtimestamp(
-                        internal_file.mtime
-                    )
-                    internal_file_object.update_date = datetime.fromtimestamp(
-                        internal_file.mtime
-                    )
-
-                    # Update size of file
-                    internal_file_object.length = internal_file.size
-
-                    # Update hash generating the hash file and adding its content
-                    if internal_file.chksum:
-                        hash_file = CRC32Hasher.create_hash_file(
-                            object_to_process=internal_file_object,
-                            digested_hex_value=str(internal_file.chksum),
-                        )
-                        internal_file_object.hashes["crc32"] = (
-                            str(internal_file.chksum),
-                            hash_file,
-                            CRC32Hasher,
-                        )
-
-                    # Set up action to be extracted instead of to save.
-                    internal_file_object._actions.to_extract()
-
-                    # Get mode from type
-                    mode: str = "r" if internal_file_object.type == "text" else "rb"
-
-                    # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content_as_buffer = cls.content_buffer(
-                        file_object=file_object, internal_file_name=filename, mode=mode
-                    )
-
-                    # Set up metadata for internal file
-                    internal_file_object.meta.hashable = False
-                    internal_file_object.meta.internal = True
-
-                    # Add internal file as File object to file.
-                    file_object._content_files[filename] = internal_file_object
+            for filename, internal_file_object in cls.iterate_internal_files(
+                file_object, overrider=overrider, **kwargs
+            ):
+                # Add internal file as File object to file.
+                file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -457,6 +400,51 @@ class TarCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         return True
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        with cls.compressor_class(file=file_object.content_as_buffer) as compressed_object:
+            for internal_file in compressed_object.getmembers():
+                # Skip directories
+                if internal_file.isdir():
+                    continue
+
+                # Skip unexisting filename if for some reason there is one.
+                if not internal_file.name:
+                    continue
+
+                create_date = datetime.fromtimestamp(
+                    internal_file.mtime
+                )
+                yield (
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    str(internal_file.name),
+                    internal_file.size,
+                    create_date,
+                    create_date,
+                    str(internal_file.chksum),
+                    "crc32",
+                    CRC32Hasher
+                )
 
 
 class ZipCompressedFilesFromPackageExtractor(BasePackager):
@@ -571,81 +559,13 @@ class ZipCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         try:
-            file_system: Type[StorageEngine] = file_object.storage
-            file_class: Type[BaseFile] = file_object.__class__
-            file_class._option = file_object._option
-
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor_class(
-                file=file_object.content_as_buffer
-            ) as compressed_object:  # type: ignore
-                for internal_file in compressed_object.infolist():
-                    # Skip directories and symbolic link
-                    if internal_file.is_dir():
-                        continue
-
-                    # Skip inexisting filename if for some reason there is one.
-                    if not internal_file.filename:
-                        continue
-
-                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
-                    filename: str = str(internal_file.filename)
-
-                    # Skip duplicate only if not choosing to override.
-                    if filename in file_object._content_files and not overrider:
-                        continue
-
-                    # Create file object for internal file
-                    internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, filename),
-                        save_to=file_object.save_to,
-                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
-                        extract_data_pipeline=PipelineSequential(
-                            "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
-                            "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
-                        ),
-                        file_system_handler=file_system,
-                    )
-
-                    # Update creation and modified date. Zip don't store the created date, only the modified one.
-                    # To avoid problem the created date will be consider the same as modified.
-                    internal_file_object.create_date = datetime(
-                        *internal_file.date_time
-                    )
-                    internal_file_object.update_date = internal_file_object.create_date
-
-                    # Update size of file
-                    internal_file_object.length = internal_file.file_size
-
-                    # Update hash generating the hash file and adding its content
-                    hash_file = CRC32Hasher.create_hash_file(
-                        object_to_process=internal_file_object,
-                        digested_hex_value=str(internal_file.CRC),
-                    )
-                    internal_file_object.hashes["crc32"] = (
-                        str(internal_file.CRC),
-                        hash_file,
-                        CRC32Hasher,
-                    )
-
-                    # Set up action to be extracted instead of to save.
-                    internal_file_object._actions.to_extract()
-
-                    # Get mode from type
-                    mode: str = "r" if internal_file_object.type == "text" else "rb"
-
-                    # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content_as_buffer = cls.content_buffer(
-                        file_object=file_object, internal_file_name=filename, mode=mode
-                    )
-
-                    # Set up metadata for internal file
-                    internal_file_object.meta.hashable = False
-                    internal_file_object.meta.internal = True
-
-                    # Add internal file as File object to file.
-                    file_object._content_files[filename] = internal_file_object
+            for filename, internal_file_object in cls.iterate_internal_files(
+                file_object, overrider=overrider, **kwargs
+            ):
+                # Add internal file as File object to file.
+                file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -655,6 +575,51 @@ class ZipCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         return True
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        with cls.compressor_class(file=file_object.content_as_buffer) as compressed_object:
+            for internal_file in compressed_object.infolist():
+                # Skip directories and symbolic link
+                if internal_file.is_dir():
+                    continue
+
+                # Skip unexisting filename if for some reason there is one.
+                if not internal_file.filename:
+                    continue
+
+                # Update creation and modified date. Zip don't store the created date, only the modified one.
+                # To avoid problem the created date will be considered the same as modified.
+                create_date = datetime(* internal_file.date_time)
+
+                yield (
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    str(internal_file.filename),
+                    internal_file.file_size,
+                    create_date,
+                    create_date,
+                    str(internal_file.CRC),
+                    "crc32",
+                    CRC32Hasher
+                )
 
 
 class RarCompressedFilesFromPackageExtractor(BasePackager):
@@ -773,79 +738,13 @@ class RarCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         try:
-            file_system: Type[StorageEngine] = file_object.storage
-            file_class: Type[BaseFile] = file_object.__class__
-            file_class._option = file_object._option
-
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor_class(
-                file=file_object.content_as_buffer
-            ) as compressed_object:
-                for internal_file in compressed_object.infolist():
-                    # Skip directories and symbolic link
-                    if internal_file.is_dir() or internal_file.is_symlink():
-                        continue
-
-                    # Skip unexisting filename if for some reason there is one.
-                    if not internal_file.filename:
-                        continue
-
-                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
-                    filename: str = str(internal_file.filename)
-
-                    # Skip duplicate only if not choosing to override.
-                    if filename in file_object._content_files and not overrider:
-                        continue
-
-                    # Create file object for internal file
-                    internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, filename),
-                        save_to=file_object.save_to,
-                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
-                        extract_data_pipeline=PipelineSequential(
-                            "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
-                            "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
-                        ),
-                        file_system_handler=file_system,
-                    )
-
-                    # Update creation and modified date
-                    internal_file_object.create_date = internal_file.ctime
-                    internal_file_object.update_date = internal_file.mtime
-
-                    # Update size of file
-                    internal_file_object.length = internal_file.file_size
-
-                    # Update hash generating the hash file and adding its content
-                    if internal_file.CRC:
-                        hash_file = CRC32Hasher.create_hash_file(
-                            object_to_process=internal_file_object,
-                            digested_hex_value=internal_file.CRC,
-                        )
-                        internal_file_object.hashes["crc32"] = (
-                            internal_file.CRC,
-                            hash_file,
-                            CRC32Hasher,
-                        )
-
-                    # Set up action to be extracted instead of to save.
-                    internal_file_object._actions.to_extract()
-
-                    # Get mode from type
-                    mode: str = "r" if internal_file_object.type == "text" else "rb"
-
-                    # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content_as_buffer = cls.content_buffer(
-                        file_object=file_object, internal_file_name=filename, mode=mode
-                    )
-
-                    # Set up metadata for internal file
-                    internal_file_object.meta.hashable = False
-                    internal_file_object.meta.internal = True
-
-                    # Add internal file as File object to file.
-                    file_object._content_files[filename] = internal_file_object
+            for filename, internal_file_object in cls.iterate_internal_files(
+                file_object, overrider=overrider, **kwargs
+            ):
+                # Add internal file as File object to file.
+                file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -855,6 +754,47 @@ class RarCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         return True
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        with cls.compressor_class(file=file_object.content_as_buffer) as compressed_object:
+            for internal_file in compressed_object.infolist():
+                # Skip directories and symbolic link
+                if internal_file.is_dir() or internal_file.is_symlink():
+                    continue
+
+                # Skip unexisting filename if for some reason there is one.
+                if not internal_file.filename:
+                    continue
+
+                yield (
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    str(internal_file.filename),
+                    internal_file.file_size,
+                    internal_file.ctime,
+                    internal_file.mtime,
+                    str(internal_file.CRC),
+                    "crc32",
+                    CRC32Hasher
+                )
 
 
 class SevenZipCompressedFilesFromPackageExtractor(BasePackager):
@@ -983,82 +923,11 @@ class SevenZipCompressedFilesFromPackageExtractor(BasePackager):
         from py7zr.exceptions import Bad7zFile
 
         try:
-            cls.validate(file_object)
-
-            file_system: Type[StorageEngine] = file_object.storage
-            file_class: Type[BaseFile] = file_object.__class__
-            file_class._option = file_object._option
-            
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor_class(
-                file=file_object.content_as_buffer
-            ) as compressed_object:  # type: ignore
-                compressed_object: FileInfo
-                
-                for internal_file in compressed_object.list():
-                    # Skip directories
-                    if internal_file.is_directory:
-                        continue
-
-                    # Skip inexistent filename if for some reason there is one.
-                    if not internal_file.filename:
-                        continue
-
-                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
-                    filename: str = str(internal_file.filename)
-
-                    # Skip duplicate only if not choosing to override.
-                    if filename in file_object._content_files and not overrider:
-                        continue
-                    
-                    # Create file object for internal file
-                    internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, filename),
-                        save_to=file_object.save_to,
-                        relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
-                        extract_data_pipeline=PipelineSequential(
-                            "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
-                            "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
-                        ),
-                        file_system_handler=file_system,
-                    )
-
-                    # Update creation and modified date
-                    internal_file_object.create_date = internal_file.creationtime
-                    internal_file_object.update_date = internal_file.creationtime
-
-                    # Update size of file
-                    internal_file_object.length = internal_file.uncompressed
-
-                    # Update hash generating the hash file and adding its content
-                    hash_file = CRC32Hasher.create_hash_file(
-                        object_to_process=internal_file_object,
-                        digested_hex_value=internal_file.crc32,
-                    )
-                    internal_file_object.hashes["crc32"] = (
-                        internal_file.crc32,
-                        hash_file,
-                        CRC32Hasher,
-                    )
-
-                    # Set up action to be extracted instead of to save.
-                    internal_file_object._actions.to_extract()
-
-                    # Get mode from type
-                    mode = "r" if internal_file_object.type == "text" else "rb"
-
-                    # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content_as_buffer = cls.content_buffer(
-                        file_object=file_object, internal_file_name=filename, mode=mode
-                    )
-
-                    # Set up metadata for internal file
-                    internal_file_object.meta.hashable = False
-                    internal_file_object.meta.internal = True
-
-                    # Add internal file as File object to file.
-                    file_object._content_files[filename] = internal_file_object
+            for filename, internal_file_object in cls.iterate_internal_files(file_object, overrider=overrider, **kwargs):
+                # Add internal file as File object to file.
+                file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -1068,3 +937,46 @@ class SevenZipCompressedFilesFromPackageExtractor(BasePackager):
             return False
 
         return True
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (filename, uncompressed length, None, None, None, None)
+        """
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        with cls.compressor_class(file=file_object.content_as_buffer) as compressed_object:  # type: ignore
+            compressed_object: FileInfo
+
+            for internal_file in compressed_object.list():
+                # Skip directories
+                if internal_file.is_directory:
+                    continue
+
+                # Skip inexistent filename if for some reason there is one.
+                if not internal_file.filename:
+                    continue
+
+                yield (
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    str(internal_file.filename),
+                    internal_file.uncompressed,
+                    internal_file.creationtime,
+                    internal_file.creationtime,
+                    internal_file.crc32,
+                    "crc32",
+                    CRC32Hasher
+                )
