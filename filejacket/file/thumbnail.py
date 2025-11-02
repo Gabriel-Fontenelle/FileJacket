@@ -237,7 +237,7 @@ class FileThumbnail:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {
+        attributes = (
             "static_defaults",
             "animated_defaults",
             "history",
@@ -248,7 +248,7 @@ class FileThumbnail:
             "video_engine",
             "render_static_pipeline",
             "render_animated_pipeline",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 
