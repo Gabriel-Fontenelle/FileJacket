@@ -28,12 +28,13 @@ from io import BytesIO, StringIO, IOBase
 from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence, Pattern
 
 # modules
-from ..adapters.pipeline import PipelineOrderedDependency
+from ..adapters.pipeline import PipelineOrderedDependency, PipelineSequential
 from ..engines.storage import StorageEngine
 from ..exception import (
     ImproperlyConfiguredFile,
     MultipleFileExistError,
     ValidationError,
+    StopPipeline,
 )
 
 if TYPE_CHECKING:
@@ -54,16 +55,14 @@ class BaseComparer:
     Base class to be inherent to define classes for use on Comparer pipeline.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> None | bool:
         """
         Method used to check if two files are the same in memory using the File object.
         This method must be overwritten on child class to work correctly.
+
+        The StopPipeline exception should be used in this method to stop the pipeline when the desirable
+        result is reached.
         """
         raise NotImplementedError(
             "The method is_the_same needs to be overwrite on child class."
@@ -894,6 +893,8 @@ class BasePackager:
         )
 
         return cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
+        result = cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
+        raise StopPipeline(f"Stopper called at {cls.__name__}", result)
 
 
 class BaseRenamer:
@@ -901,10 +902,6 @@ class BaseRenamer:
     Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
     file_system_handler: Type[StorageEngine] = StorageEngine
     """
     Variable to store the local storage system.
@@ -1011,7 +1008,7 @@ class BaseRenamer:
         # filename and extension should be property functions.
         object_to_process.complete_filename_as_tuple = (new_filename, extension)
 
-        return True
+        raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
     @classmethod
     def is_name_reserved(cls, filename: str, extension: str) -> bool:
@@ -1061,11 +1058,6 @@ class BaseRender:
     This attribute should be override in children classes.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
-
     @classmethod
     def create_file(
         cls, object_to_process: BaseFile, content: str | bytes | BytesIO | StringIO
@@ -1093,11 +1085,11 @@ class BaseRender:
             cls.render(file_object=object_to_process, **kwargs)
 
         except ValidationError:
-            # We consume and don't register validation error because it is a expected error case the extension is
+            # We consume and don't register validation error because it is an expected error case the extension is
             # not compatible with the method.
             return False
 
-        return True
+        raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
     @classmethod
     def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
