@@ -395,7 +395,7 @@ class BaseFile:
         """
         return self.__lt__(other_instance) or self.__eq__(other_instance)
 
-    def __eq__(self: BaseFile, other_instance: object) -> bool:
+    def __eq__(self: BaseFile, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison == to work between BaseFiles.
         `other_instance` can be an object or a list of objects to be compared.
@@ -412,7 +412,7 @@ class BaseFile:
         except ValueError:
             return False
 
-    def __ne__(self: BaseFile, other_instance: object) -> bool:
+    def __ne__(self: BaseFile, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison not equal to work between BaseFiles.
         """
@@ -725,7 +725,6 @@ class BaseFile:
             self._actions.listed()
 
         # Return only the list of types for the file objects.
-        return set(self._content_files.files_type() or [self.type])
         if len(self._content_files) > 0:
             return self._content_files.files_type()
 
@@ -826,15 +825,11 @@ class BaseFile:
         return recursively_get_pipelines_from_serializer(self.__serialize__)
 
     @property
-    def pipelines_errors(self: BaseFile) -> list[tuple[str, list[Exception]]]:
+    def pipelines_errors(self: BaseFile) -> Iterator[tuple[str, list[Exception]]]:
         """
-        Method to return the list of errors that occurred in all pipelines availables.
+        Method to return the list of errors that occurred in all pipelines available.
         """
-        return [
-            (name, pipeline.errors)
-            for name, pipeline in self.pipelines
-            if pipeline.errors
-        ]
+        return map(lambda x: (x[0], x[1].errors), filter(lambda x: bool(x[1].errors), self.pipelines))
 
     @property
     def save_to(self: BaseFile) -> str | None:
@@ -877,7 +872,7 @@ class BaseFile:
         return self.storage.join(save_to, relative_path, complete_filename)
 
     @property
-    def thumbnail(self: BaseFile) -> BaseFile:
+    def thumbnail(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the thumbnail representation of current content.
         """
@@ -887,7 +882,7 @@ class BaseFile:
         return self._thumbnail.thumbnail
 
     @property
-    def preview(self: BaseFile) -> BaseFile:
+    def preview(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the animated preview of current content.
         """
@@ -1135,7 +1130,7 @@ class BaseFile:
 
             self._actions.hashed()
 
-    def get_content(self: BaseFile, item: int | str) -> BaseFile:
+    def get_content(self: BaseFile, item: int | str) -> tuple[BaseFile, int, str]:
         """
         Method to return an internal content by index or filename.
         """
