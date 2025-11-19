@@ -161,11 +161,7 @@ class JSONSerializer:
             Internal function to encode a IO Buffer.
             To avoid circular reference error in json encoder we call json_class_encode to encode the storage's class.
             """
-            default_storage_class = (
-                source.storage
-                if hasattr(source, "storage") and source.storage
-                else LinuxFileSystem
-            )
+            default_storage_class = getattr(source, "storage", LinuxFileSystem) or LinuxFileSystem
 
             if primitives:
                 return f"{obj.name}:{obj.mode}:{json_class_encode(default_storage_class, primitives)}"
