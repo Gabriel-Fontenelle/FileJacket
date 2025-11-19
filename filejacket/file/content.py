@@ -354,20 +354,6 @@ class FileContent:
     File`s content cached stored through the cache abstraction instantiated from cache_helper.
     """
 
-    @classmethod
-    def from_str(cls, value: str, force_cache) -> FileContent:
-        obj = cls.__new__(cls)  # Does not call __init__
-        super(
-            FileContent, obj
-        ).__init__()  # Don't forget to call any polymorphic base class initializers
-
-        obj.buffer_class = BufferStr
-        obj.buffer = BufferStr.to_buffer(value)
-
-        ...
-
-        return obj
-
     def __init__(
         self,
         raw_value: str
