@@ -283,7 +283,7 @@ class PipelineEngine:
                 break
 
             except Exception as e:
-                message = f"An error occurred while running process {type(processor)}: {e}"
+                message = f"An error occurred while running process {processor.__class__.__name__}: {e}"
 
                 if pipeline_raises_exception:
                     raise PipelineError(message) from e
@@ -336,7 +336,7 @@ class PipelineEngine:
                 """As process_as_generator don't catch the validation error, we ignore it here."""
 
             except Exception as e:
-                message = f"An error occurred while running process {type(processor)}: {e}"
+                message = f"An error occurred while running process {processor.__class__.__name__}: {e}"
 
                 if pipeline_raises_exception:
                     raise PipelineError(message) from e
