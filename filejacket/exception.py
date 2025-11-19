@@ -41,86 +41,92 @@ __all__: list[str] = [
 ]
 
 
-class SerializerError(Exception):
+class FileJacketException(Exception):
+    """
+    Base exception to catch all FileJacket module exceptions.
+    """
+
+
+class SerializerError(FileJacketException):
     """
     Exception that defines errors for when a serialization problem occur in file.
     """
 
 
-class NoInternalContentError(Exception):
+class NoInternalContentError(FileJacketException):
     """
     Exception that defines errors for when no internal content is found in file.
     Meaning that the file is not a container or compacted file.
     """
 
 
-class EmptyContentError(Exception):
+class EmptyContentError(FileJacketException):
     """
     Exception that defines errors for when a content was not loaded because its empty.
     """
 
 
-class ImproperlyConfiguredFile(Exception):
+class ImproperlyConfiguredFile(FileJacketException):
     """
     Exception that defines error for when a File has a missing configuration.
     """
 
 
-class ImproperlyConfiguredPipeline(Exception):
+class ImproperlyConfiguredPipeline(FileJacketException):
     """
     Exception that defines error for when a Pipeline has a missing configuration or improper configured one.
     """
 
 
-class OperationNotAllowed(Exception):
+class OperationNotAllowed(FileJacketException):
     """
     Exception that defines error for when a operation is not allowed for file.
     """
 
 
-class CacheContentNotSeekableError(Exception):
+class CacheContentNotSeekableError(FileJacketException):
     """
     Exception that defines error for when a cached content results in a buffer not seekable.
     """
 
 
-class ExtractorError(ValueError):
+class ExtractorError(FileJacketException):
     """
     Exception that defines error for wrong value input in extractor classes.
     """
 
 
-class ValidationError(Exception):
+class ValidationError(FileJacketException):
     """
     Exception that defines error for when a File was a missing attribute.
     """
 
 
-class ReservedFilenameError(Exception):
+class ReservedFilenameError(FileJacketException):
     """
     Exception that defines error for when trying to rename a file to an already reserved one.
     """
 
 
-class RenderError(Exception):
+class RenderError(FileJacketException):
     """
     Exception that defines error for when trying to render a file.
     """
 
 
-class PipelineError(Exception):
+class PipelineError(FileJacketException):
     """
     Exception that defines error for when trying to render a file.
     """
 
 
-class StopPipeline(Exception):
+class StopPipeline(FileJacketException):
     """
     Exception that defines a stop to the pipeline being run.
     """
 
 
-class MultipleFileExistError(Exception):
+class MultipleFileExistError(FileJacketException):
     """
     Exception that defines error for when multiple files are found instead of only one.
     """
