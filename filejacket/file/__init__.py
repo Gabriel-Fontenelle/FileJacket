@@ -513,7 +513,7 @@ class BaseFile:
         """
         Method to return as attribute the complete filename from file in tuple format.
         """
-        return (self.filename or "", self.extension)
+        return self.filename or "", self.extension
 
     @complete_filename_as_tuple.setter
     def complete_filename_as_tuple(self: BaseFile, value: tuple[str, str | None]) -> None:
@@ -1114,7 +1114,7 @@ class BaseFile:
         # Call pipeline with keyword_arguments saved in file object
         self.extract_data_pipeline.run(
             object_to_process=self,
-            **self._get_kwargs_for_pipeline("extract_data_pipeline"),
+            **self._get_kwargs_for_pipeline("extract_data_pipeline")
         )
 
         # Mark the file object as run its pipeline for extraction.
@@ -1292,7 +1292,7 @@ class BaseFile:
         self._state.moving = False
         self._naming.previous_saved_extension = self.extension
 
-    def serialize(self: BaseFile) -> str:
+    def serialize(self: BaseFile) -> Any:
         """
         Method to serialize the current object using the serializer declared in attribute `serializer`.
         """
