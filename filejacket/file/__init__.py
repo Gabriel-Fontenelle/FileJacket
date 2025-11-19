@@ -124,8 +124,8 @@ class BaseFile:
     """
     File's type (e.g. image, audio, video, application).
     """
-    _meta: FileMetadata
-    _meta = None
+    meta: FileMetadata
+    meta = None
     """
     Additional metadata info that file can have. Those data not always will exist for all files.
     """
@@ -287,8 +287,12 @@ class BaseFile:
         # In order to allow multiple versions of the serialized object to be correctly parsed with
         # the last version we should make conversions of attributes here.
         version: str = kwargs.pop("__version__", "")
-        if version == "1":
-            """Do nothing, as version 1 don't have incompatibility with this class version."""
+        match version:
+            case "1":
+                """Version 1 has the _meta with old name"""
+                if "_meta" in kwargs:
+                    kwargs["meta"] = kwargs["_meta"]
+                    del kwargs["_meta"]
 
         # Set up storage with default based on operational system
         if not self.storage:
@@ -321,8 +325,8 @@ class BaseFile:
             self._state = FileState()
 
         # Set up metadata of file
-        if not self._meta:
-            self._meta = FileMetadata()
+        if not self.meta:
+            self.meta = FileMetadata()
 
         # Set up resources used for handling internal files
         if not self._content_files:
@@ -471,7 +475,7 @@ class BaseFile:
             "length",
             "mime_type",
             "type",
-            "_meta",
+            "meta",
             "hashes",
             "_pipelines_override_keyword_arguments",
             "storage",
@@ -669,68 +673,6 @@ class BaseFile:
         return self._content.content_as_str
 
     @property
-    def files(self: BaseFile) -> Iterator[BaseFile]:
-        """
-        Method to return as attribute the internal files that can be present in content.
-        This method can be override in child class, and it should always return a generator.
-
-        The internal files will be available in memory while reset is not called and history not cleaned.
-        """
-        if self._actions.list:
-            # Reset internal files' dictionary while keeping historic.
-            self._content_files.reset()
-
-            # Extract data from content
-            self._content_files.unpack_data_pipeline.run(object_to_process=self)
-
-            # Mark as concluded the was_listed option
-            self._actions.listed()
-
-        # Return only the list of file objects and not filename and file objects.
-        return self._content_files.files()
-
-    @property
-    def files_as_generator(self: BaseFile) -> Iterator[BaseFile]:
-        """
-        Method to obtain the files of internal files as iterator generated directly from the buffer.
-        """
-        if self._actions.list:
-            # Reset internal files' dictionary while keeping historic.
-            self._content_files.reset()
-
-            # Extract data from content
-            for internal_file in self._content_files.unpack_data_pipeline.run_as_generator(object_to_process=self):
-                # Return only the list of file objects and not filename and file objects.
-                yield internal_file
-
-            # Mark as concluded the was_listed option
-            self._actions.listed()
-
-    @property
-    def types(self: BaseFile) -> Iterator[str]:
-        """
-        Method to return as attribute the types of internal files that can be present in content.
-        This method can be override in child class, and it should always return a generator.
-
-        The internal files will be available in memory while reset is not called and history not cleaned.
-        """
-        if self._actions.list:
-            # Reset internal files' dictionary while keeping historic.
-            self._content_files.reset()
-
-            # Extract data from content
-            self._content_files.unpack_data_pipeline.run(object_to_process=self)
-
-            # Mark as concluded the was_listed option
-            self._actions.listed()
-
-        # Return only the list of types for the file objects.
-        if len(self._content_files) > 0:
-            return self._content_files.files_type()
-
-        return iter({self.type})
-
-    @property
     def is_binary(self: BaseFile) -> bool | None:
         """
         Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
@@ -758,13 +700,6 @@ class BaseFile:
             return None
 
         return True
-
-    @property
-    def meta(self: BaseFile) -> FileMetadata:
-        """
-        Method to return as attribute the file`s metadata class.
-        """
-        return self._meta
 
     @property
     def path(self: BaseFile) -> str | None:
@@ -935,7 +870,7 @@ class BaseFile:
 
         The following attributes are set for file:
         - complete_filename (filename, extension)
-        - _meta (compressed, lossless, packed)
+        - meta (compressed, lossless, packed)
 
         TODO: we could change add_valid_filename to also search for extension
          in mime_type of file, case there is any, for more efficient search
@@ -972,17 +907,17 @@ class BaseFile:
 
             # Save additional metadata to file.
             if self.extension:
-                self._meta.compressed = self.mime_type_handler.is_extension_compressed(
+                self.meta.compressed = self.mime_type_handler.is_extension_compressed(
                     self.extension
                 )
-                self._meta.lossless = self.mime_type_handler.is_extension_lossless(
+                self.meta.lossless = self.mime_type_handler.is_extension_lossless(
                     self.extension
                 )
-                self._meta.packed = self.mime_type_handler.is_extension_packed(
+                self.meta.packed = self.mime_type_handler.is_extension_packed(
                     self.extension
                 )
 
-            if self._meta.packed:
+            if self.meta.packed:
                 self._actions.to_list()
 
             return True
@@ -1024,20 +959,20 @@ class BaseFile:
 
             # Save additional metadata to file.
             if self.extension:
-                self._meta.compressed = self.mime_type_handler.is_extension_compressed(
+                self.meta.compressed = self.mime_type_handler.is_extension_compressed(
                     possible_extension
                 )
-                self._meta.lossless = self.mime_type_handler.is_extension_lossless(
+                self.meta.lossless = self.mime_type_handler.is_extension_lossless(
                     possible_extension
                 )
-                self._meta.packed = self.mime_type_handler.is_extension_packed(
+                self.meta.packed = self.mime_type_handler.is_extension_packed(
                     possible_extension
                 )
 
-                self._meta.partial = True
+                self.meta.partial = True
 
             #  We don't list objects that partial, so we mark it as listed already.
-            if self._meta.packed:
+            if self.meta.packed:
                 self._actions.listed()
 
             return True
@@ -1185,6 +1120,42 @@ class BaseFile:
         # Mark the file object as run its pipeline for extraction.
         # Set up its processing state to False
         self._state.processing = False
+
+    def files(self: BaseFile) -> Iterator[BaseFile]:
+        """
+        Method to return as attribute the internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        # Return only the list of file objects and not filename and file objects.
+        return self._content_files.files()
+
+    def files_as_generator(self: BaseFile) -> Iterator[BaseFile]:
+        """
+        Method to obtain the files of internal files as iterator generated directly from the buffer.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            for internal_file in self._content_files.unpack_data_pipeline.run_as_generator(object_to_process=self):
+                # Return only the list of file objects and not filename and file objects.
+                yield internal_file
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
 
     def save(self: BaseFile) -> None:
         """
