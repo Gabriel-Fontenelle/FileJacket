@@ -69,6 +69,12 @@ class BaseComparer:
         )
 
     @classmethod
+    def lower_or_greater(cls, file_1: BaseFile, file_2: BaseFile) -> None | int:
+        raise NotImplementedError(
+            "The method is_the_same needs to be overwrite on child class."
+        )
+
+    @classmethod
     def process(cls, **kwargs: Any) -> None | bool:
         """
         Method used to run this class on Processor`s Pipeline for Files.
