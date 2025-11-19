@@ -1157,6 +1157,29 @@ class BaseFile:
             # Mark as concluded the was_listed option
             self._actions.listed()
 
+    def types(self: BaseFile) -> Iterator[str]:
+        """
+        Method to return as attribute the types of internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        # Return only the list of types for the file objects.
+        if len(self._content_files) > 0:
+            return self._content_files.files_type()
+
+        return iter({self.type})
+
     def save(self: BaseFile) -> None:
         """
         Method to save file to file system. In this method we do some validation and verify if file can be saved
