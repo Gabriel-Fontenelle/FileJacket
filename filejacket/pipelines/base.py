@@ -697,10 +697,6 @@ class BasePackager:
     Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     This attribute should be override in children classes.
     """
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
 
     class ContentBuffer(IOBase):
         """
@@ -1011,7 +1007,6 @@ class BasePackager:
             "overrider", object_to_process._option.allow_override
         )
 
-        return cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
         result = cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
         raise StopPipeline(f"Stopper called at {cls.__name__}", result)
 
