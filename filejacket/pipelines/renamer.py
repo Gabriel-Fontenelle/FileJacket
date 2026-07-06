@@ -56,7 +56,7 @@ class WindowsRenamer(BaseRenamer):
         formatted_extension: str = f".{extension}" if extension else ""
 
         i = 0
-        while cls.file_system_handler.exists(
+        while cls.storage.exists(
             directory_path + filename + formatted_extension
         ) or cls.is_name_reserved(filename, formatted_extension):
             i += 1
@@ -87,7 +87,7 @@ class LinuxRenamer(BaseRenamer):
         formatted_extension: str = f".{extension}" if extension else ""
 
         i = 0
-        while cls.file_system_handler.exists(
+        while cls.storage.exists(
             directory_path + filename + formatted_extension
         ) or cls.is_name_reserved(filename, formatted_extension):
             i += 1
@@ -113,7 +113,7 @@ class UniqueRenamer(BaseRenamer):
 
         i = 0
         while (
-            cls.file_system_handler.exists(
+            cls.storage.exists(
                 directory_path + filename + formatted_extension
             )
             or cls.is_name_reserved(filename, formatted_extension)

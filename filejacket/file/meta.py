@@ -135,13 +135,13 @@ class FileMetadata:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {"packed", "compressed", "lossless", "hashable", "extra_data"}
-        optional_attributes = {
+        attributes = ("packed", "compressed", "lossless", "hashable", "extra_data")
+        optional_attributes = (
             "checksum",
             "loaded",
             "preview",
             "thumbnail",
-        }
+        )
 
         class_vars = {key: getattr(self, key) for key in attributes}
 

@@ -354,20 +354,6 @@ class FileContent:
     File`s content cached stored through the cache abstraction instantiated from cache_helper.
     """
 
-    @classmethod
-    def from_str(cls, value: str, force_cache) -> FileContent:
-        obj = cls.__new__(cls)  # Does not call __init__
-        super(
-            FileContent, obj
-        ).__init__()  # Don't forget to call any polymorphic base class initializers
-
-        obj.buffer_class = BufferStr
-        obj.buffer = BufferStr.to_buffer(value)
-
-        ...
-
-        return obj
-
     def __init__(
         self,
         raw_value: str
@@ -496,7 +482,7 @@ class FileContent:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {
+        attributes = (
             "buffer",
             "buffer_helper",
             "cache_helper",
@@ -505,7 +491,7 @@ class FileContent:
             "_buffer_encoding",
             "cached",
             "_cached_content",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 
@@ -698,10 +684,10 @@ class FilePacket:
 
     # Pipelines
     unpack_data_pipeline: PipelineEngine = PipelineSequential(
-        "filejacket.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.RarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.TarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.ZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor",
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
@@ -772,7 +758,7 @@ class FilePacket:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_internal_files", "unpack_data_pipeline", "history", "length"}
+        attributes = ("_internal_files", "unpack_data_pipeline", "history", "length")
 
         return {key: getattr(self, key) for key in attributes}
 

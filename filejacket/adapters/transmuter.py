@@ -33,6 +33,7 @@ from filejacket.file.hasher import FileHashes
 from filejacket.file.thumbnail import FileThumbnail
 from ..adapters.pipeline import PipelineOrderedDependency
 from ..engines.pipeline import PipelineEngine
+from ..engines.transmuter import TransmuterEngine
 
 if TYPE_CHECKING:
     from ..file import BaseFile
@@ -41,7 +42,6 @@ if TYPE_CHECKING:
 
 __all__: list[str] = [
     # Transmuters
-    "BaseTransmuter",
     "TransmuterClass",
     "TransmuterObjectClass",
     "TransmuterPipeline",
@@ -53,62 +53,10 @@ __all__: list[str] = [
     "TransmuterContentFiles",
     "TransmuterContent",
     "TransmuterContentBase64",
-    # Serializers
-    "FileDictionarySerializer",
-    "FileWithContentDictionarySerializer",
-    "FileJsonSerializer",
-    "FileWithContentJsonSerializer",
 ]
 
 
-class BaseTransmuter:
-    """
-    Class helper for converting values at serializer/deserializer classes that made use of it in its declareted attributes.
-    This class uses __set_name__ as a way to organize the code and reference to those classes.
-    """
-
-    def __set_name__(self, owner, name):
-        """
-        Method to automatically set the attribute name in which it was declared and register it in owner list of attributes.
-        The owner list of attributes will be created at the first call of a class that inherent BaseTransmuter.
-
-        Usage:
-
-        ```
-        class Serializer:
-            my_attribute = BaseTransmuter()
-
-        ```
-        """
-
-        self.attribute_name = name
-        self.serializer = owner
-
-        if hasattr(owner, "transmuters"):
-            owner.transmuters.add(name)
-        else:
-            owner.transmuters = {name}
-
-    def from_data(self, value: Any) -> Any:
-        """
-        Method for the transmuter to serialize a value.
-        This Method should be override in child classes.
-        """
-        raise NotImplementedError(
-            "The method `from_data` must be implemented in child class."
-        )
-
-    def to_data(self, value: Any, reference: BaseFile) -> Any:
-        """
-        Method for the transmuter to deserialize a value.
-        This Method should be override in child classes.
-        """
-        raise NotImplementedError(
-            "The method `to_data` must be implemented in child class."
-        )
-
-
-class TransmuterClass(BaseTransmuter):
+class TransmuterClass(TransmuterEngine):
     """
     Transmuter class to handle non instantiated class.
     """
@@ -128,7 +76,7 @@ class TransmuterClass(BaseTransmuter):
         return getattr(module, class_name)
 
 
-class TransmuterObjectClass(BaseTransmuter):
+class TransmuterObjectClass(TransmuterEngine):
     """
     Transmuter class to handle instantiated class.
     """
@@ -148,7 +96,7 @@ class TransmuterObjectClass(BaseTransmuter):
         return getattr(module, class_name)()
 
 
-class TransmuterPipeline(BaseTransmuter):
+class TransmuterPipeline(TransmuterEngine):
     """
     Transmuter class to handle Pipeline objects.
     """
@@ -183,7 +131,7 @@ class TransmuterPipeline(BaseTransmuter):
         return pipeline
 
 
-class TransmuterDatetime(BaseTransmuter):
+class TransmuterDatetime(TransmuterEngine):
     """
     Transmuter class to handle datetime or time objects.
     """
@@ -206,7 +154,7 @@ class TransmuterDatetime(BaseTransmuter):
         return data_type.fromisoformat(data)
 
 
-class TransmuterAttribute(BaseTransmuter):
+class TransmuterAttribute(TransmuterEngine):
     """
     Transmuter class to handle attribute that are objects from classes.
     """
@@ -247,7 +195,7 @@ class TransmuterAttribute(BaseTransmuter):
         return attribute_object(**values)
 
 
-class TransmuterValue(BaseTransmuter):
+class TransmuterValue(TransmuterEngine):
     """
     Transmuter class to handle attributes that don`t need to be converted.
     """
@@ -265,7 +213,7 @@ class TransmuterValue(BaseTransmuter):
         return value
 
 
-class TransmuterThumbnail(BaseTransmuter):
+class TransmuterThumbnail(TransmuterEngine):
     """
     Transmuter class to handle the FileThumbnail object.
     """
@@ -363,7 +311,7 @@ class TransmuterThumbnail(BaseTransmuter):
         return file_thumbnail
 
 
-class TransmuterHashes(BaseTransmuter):
+class TransmuterHashes(TransmuterEngine):
     """
     Transmuter class to handle the FileHash object.
     """
@@ -381,7 +329,7 @@ class TransmuterHashes(BaseTransmuter):
         for hash_name, hash_tuple in hashes["_cache"].items():
             cache_file = hash_tuple[1]
 
-            if not cache_file._meta.loaded:
+            if not cache_file.meta.loaded:
                 serialized = {
                     "path": cache_file.sanitize_path,
                     "class": transmuter_class.from_data(cache_file.__class__),
@@ -465,7 +413,7 @@ class TransmuterHashes(BaseTransmuter):
         return file_hashes
 
 
-class TransmuterContentFiles(BaseTransmuter):
+class TransmuterContentFiles(TransmuterEngine):
     """
     Transmuter class to handle the FilePacket object.
     """
@@ -515,7 +463,7 @@ class TransmuterContentFiles(BaseTransmuter):
         )
 
 
-class TransmuterContentFilesReadonly(BaseTransmuter):
+class TransmuterContentFilesReadonly(TransmuterEngine):
     """
     Transmuter class to handle the FilePacket object when is not needed to convert to data.
     """
@@ -556,7 +504,7 @@ class TransmuterContentFilesReadonly(BaseTransmuter):
         return FilePacket()
 
 
-class TransmuterContent(BaseTransmuter):
+class TransmuterContent(TransmuterEngine):
     """
     Transmuter class to handle the FileContent object.
     """
@@ -567,7 +515,7 @@ class TransmuterContent(BaseTransmuter):
         """
         dict_to_return = value.__serialize__
 
-        is_internal_file = getattr(value.related_file_object._meta, "internal", False)
+        is_internal_file = getattr(value.related_file_object.meta, "internal", False)
 
         if value.should_load_to_memory and not is_internal_file:
             raise SerializerError(
@@ -674,7 +622,7 @@ class TransmuterContent(BaseTransmuter):
         )
 
 
-class TransmuterContentBase64(BaseTransmuter):
+class TransmuterContentBase64(TransmuterEngine):
     """
     Transmuter class to handle the FileContent object as its base64 representation.
     """
@@ -755,174 +703,3 @@ class TransmuterContentBase64(BaseTransmuter):
             **value,
             **buffer_data
         )
-
-
-class SerializerJsonMixin:
-    """
-    Class helper to convert a serialization class to serialize/deserialize JSON.
-    """
-
-    @classmethod
-    def serialize(cls, source: BaseFile) -> str:
-        """
-        Method to serialize the input `source` as a JSON string.
-        """
-        from json import dumps
-
-        dict_to_convert = super().serialize(source=source)
-
-        return dumps(dict_to_convert)
-
-    @classmethod
-    def deserialize(cls, source: str) -> BaseFile:
-        """
-        Method to deserialize the JSON string input `source`.
-        """
-        from json import loads
-
-        dict_to_parse = loads(source)
-
-        return super().deserialize(source=dict_to_parse)
-
-
-class FileDictionarySerializer:
-    """
-    Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a Python dictionary.
-    This class was created with specificity in mind and would need to be overridden if the object to be serialized is
-    having a custom class based on BaseFile.
-    The content attribute will not be serialized.
-    """
-
-    transmuter: set[str]
-    """
-    Attribute used by __set_name__ to indicate the transmuters in use by the serializer.
-    """
-
-    # Datetime serializer/deserializer
-    create_date = TransmuterDatetime()
-    update_date = TransmuterDatetime()
-
-    # Class serializer/deserializer
-    storage = TransmuterClass()
-    serializer = TransmuterClass()
-    uri_handler = TransmuterClass()
-    mime_type_handler = TransmuterObjectClass()
-
-    # Pipelines serializer/deserializer
-    extract_data_pipeline = TransmuterPipeline()
-    compare_pipeline = TransmuterPipeline()
-    hasher_pipeline = TransmuterPipeline()
-    rename_pipeline = TransmuterPipeline()
-    compare_pipeline = TransmuterPipeline()
-
-    # File Control classes serializer/deserializer
-    _option = TransmuterAttribute()
-    _actions = TransmuterAttribute()
-    _naming = TransmuterAttribute()
-    _state = TransmuterAttribute()
-    _meta = TransmuterAttribute()
-    _content_files = TransmuterContentFiles()
-    _thumbnail = TransmuterThumbnail()
-    hashes = TransmuterHashes()
-    _content = TransmuterContent()
-
-    # Raw attribute serializer/deserilizer
-    id = TransmuterValue()
-    filename = TransmuterValue()
-    extension = TransmuterValue()
-    _path = TransmuterValue()
-    _save_to = TransmuterValue()
-    relative_path = TransmuterValue()
-    length = TransmuterValue()
-    mime_type = TransmuterValue()
-    type = TransmuterValue()
-    _pipelines_override_keyword_arguments = TransmuterValue()
-    __version__ = TransmuterValue()
-
-    @classmethod
-    def serialize(cls, source: BaseFile) -> dict[str, str | int | bool]:
-        """
-        Method to serialize the input `source`
-        """
-
-        return {
-            "__source__": TransmuterClass().from_data(source.__class__),
-            **{
-                attribute: getattr(cls, attribute).from_data(
-                    value=getattr(source, attribute)
-                )
-                for attribute in cls.transmuters
-                if hasattr(source, attribute) and getattr(source, attribute) is not None
-            },
-        }
-
-    @classmethod
-    def deserialize(cls, source: dict[str, Any]) -> BaseFile:
-        """
-        Method to deserialize the input `source`
-        """
-        data = source.copy()
-
-        class_instance = TransmuterClass().to_data(data["__source__"], reference=None)
-        # Create empty file
-        file_object = class_instance.__new__(class_instance)
-
-        # Process storage before anything else
-        file_object.storage = cls.storage.to_data(
-            data["storage"], reference=file_object
-        )
-
-        keys = data.keys()
-        # Fill content of file with deserialized objects
-        kwargs = {
-            attribute: getattr(cls, attribute).to_data(
-                value=data[attribute], reference=file_object
-            )
-            for attribute in cls.transmuters
-            if attribute in keys
-        }
-
-        file_object.__init__(**kwargs)
-
-        return file_object
-
-
-class FileWithContentDictionarySerializer(FileDictionarySerializer):
-    """
-    Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a Python dictionary.
-    This class was created with specificity in mind and would need to be overridden if the object to be serialized has
-    a custom class based on BaseFile.
-    The content attribute will be serialized.
-    """
-
-    _content = TransmuterContentBase64()
-
-
-class FileJsonSerializer(SerializerJsonMixin, FileDictionarySerializer):
-    """
-    Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a json string.
-    This class was created with specificity in mind and would need to be override if the object to be serialized has
-    a custom class based on BaseFile.
-    The content attribute will not be serialized.
-    """
-
-
-class FileWithContentJsonSerializer(
-    SerializerJsonMixin, FileWithContentDictionarySerializer
-):
-    """
-    Class that allow handling of Serialization/Deserialization from BaseFile instance to and from a json string.
-    This class was created with specificity in mind and would need to be overridden if the object to be serialized has
-    a custom class based on BaseFile.
-    The content attribute will be serialized.
-    """
-
-class FileDictionarySerializerReadonly(FileDictionarySerializer):
-    """
-
-    """
-    _content_files = TransmuterContentFilesReadonly()
-
-
-class FileJsonSerializerReadonly(SerializerJsonMixin, FileDictionarySerializerReadonly):
-    ...

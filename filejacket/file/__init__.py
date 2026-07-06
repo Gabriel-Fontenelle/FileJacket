@@ -36,6 +36,7 @@ from .name import FileNaming
 from .option import FileOption
 from .state import FileState
 from .thumbnail import FileThumbnail
+from .versioning import migrate_schema
 from ..adapters.mimetype import LibraryMimeTyper
 from ..adapters.pipeline import PipelineSequential, PipelineOrderedDependency, PipelineContent
 from ..adapters.storage import LinuxFileSystem, WindowsFileSystem
@@ -50,12 +51,12 @@ from ..exception import (
     ValidationError,
 )
 from ..handler import URI
-from ..serializer import JSONSerializer
+from ..adapters.serializer import JSONSerializer
 
 if TYPE_CHECKING:
     from io import BytesIO, StringIO
 
-    from ..serializer import PickleSerializer
+    from ..adapters.serializer import PickleSerializer
     from ..adapters.mimetype import MimeTypeEngine
     from ..adapters.storage import StorageEngine
     from ..pipelines.base import  BasePackager
@@ -124,8 +125,8 @@ class BaseFile:
     """
     File's type (e.g. image, audio, video, application).
     """
-    _meta: FileMetadata
-    _meta = None
+    meta: FileMetadata
+    meta = None
     """
     Additional metadata info that file can have. Those data not always will exist for all files.
     """
@@ -276,6 +277,14 @@ class BaseFile:
         """
         return cls.serializer.deserialize(source=source)
 
+    @staticmethod
+    def current_version() -> int:
+        """
+        Class method to obtain the current version for the class. This is useful when using multiple versions
+        of this class and its serializers.
+        """
+        return 2
+
     def __init__(self: BaseFile, **kwargs: Any) -> None:
         """
         Method to instantiate BaseFile. This method can be used for any child class, only needing
@@ -286,9 +295,9 @@ class BaseFile:
         """
         # In order to allow multiple versions of the serialized object to be correctly parsed with
         # the last version we should make conversions of attributes here.
-        version: str = kwargs.pop("__version__", "")
-        if version == "1":
-            """Do nothing, as version 1 don't have incompatibility with this class version."""
+        version_key = "__version__"
+        version = version_key in kwargs
+        kwargs = migrate_schema(data=kwargs, current_version=self.current_version(), version_key=version_key)
 
         # Set up storage with default based on operational system
         if not self.storage:
@@ -321,8 +330,8 @@ class BaseFile:
             self._state = FileState()
 
         # Set up metadata of file
-        if not self._meta:
-            self._meta = FileMetadata()
+        if not self.meta:
+            self.meta = FileMetadata()
 
         # Set up resources used for handling internal files
         if not self._content_files:
@@ -395,7 +404,7 @@ class BaseFile:
         """
         return self.__lt__(other_instance) or self.__eq__(other_instance)
 
-    def __eq__(self: BaseFile, other_instance: object) -> bool:
+    def __eq__(self: BaseFile, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison == to work between BaseFiles.
         `other_instance` can be an object or a list of objects to be compared.
@@ -412,15 +421,10 @@ class BaseFile:
         except ValueError:
             return False
 
-    def __ne__(self: BaseFile, other_instance: object) -> bool:
+    def __ne__(self: BaseFile, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison not equal to work between BaseFiles.
         """
-        if not isinstance(other_instance, BaseFile):
-            raise NotImplementedError(
-                f"The {type(other_instance)} was not implemented to compare."
-            )
-
         return not self.__eq__(other_instance)
 
     def __gt__(self: BaseFile, other_instance: BaseFile) -> bool:
@@ -445,13 +449,19 @@ class BaseFile:
         """
         return True
 
+    def __hash__(self: BaseFile):
+        """
+
+        """
+        return id(self)
+
     @property
     def __version__(self: BaseFile) -> str:
         """
         Method to indicate the current version of BaseFile in order to allow changes between serialization
         to be handled by `__init__()`
         """
-        return "1"
+        return "2"
 
     @property
     def __serialize__(self: BaseFile) -> dict[str, Any]:
@@ -470,7 +480,7 @@ class BaseFile:
             "length",
             "mime_type",
             "type",
-            "_meta",
+            "meta",
             "hashes",
             "_pipelines_override_keyword_arguments",
             "storage",
@@ -508,7 +518,7 @@ class BaseFile:
         """
         Method to return as attribute the complete filename from file in tuple format.
         """
-        return (self.filename or "", self.extension)
+        return self.filename or "", self.extension
 
     @complete_filename_as_tuple.setter
     def complete_filename_as_tuple(self: BaseFile, value: tuple[str, str | None]) -> None:
@@ -668,48 +678,6 @@ class BaseFile:
         return self._content.content_as_str
 
     @property
-    def files(self: BaseFile) -> Iterator[BaseFile]:
-        """
-        Method to return as attribute the internal files that can be present in content.
-        This method can be override in child class, and it should always return a generator.
-
-        The internal files will be available in memory while reset is not called and history not cleaned.
-        """
-        if self._actions.list:
-            # Reset internal files' dictionary while keeping historic.
-            self._content_files.reset()
-
-            # Extract data from content
-            self._content_files.unpack_data_pipeline.run(object_to_process=self)
-
-            # Mark as concluded the was_listed option
-            self._actions.listed()
-
-        # Return only the list of file objects and not filename and file objects.
-        return self._content_files.files()
-
-    @property
-    def types(self: BaseFile) -> set[str]:
-        """
-        Method to return as attribute the types of internal files that can be present in content.
-        This method can be override in child class, and it should always return a generator.
-
-        The internal files will be available in memory while reset is not called and history not cleaned.
-        """
-        if self._actions.list:
-            # Reset internal files' dictionary while keeping historic.
-            self._content_files.reset()
-
-            # Extract data from content
-            self._content_files.unpack_data_pipeline.run(object_to_process=self)
-
-            # Mark as concluded the was_listed option
-            self._actions.listed()
-
-        # Return only the list of types for the file objects.
-        return set(self._content_files.files_type() or [self.type])
-
-    @property
     def is_binary(self: BaseFile) -> bool | None:
         """
         Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
@@ -737,13 +705,6 @@ class BaseFile:
             return None
 
         return True
-
-    @property
-    def meta(self: BaseFile) -> FileMetadata:
-        """
-        Method to return as attribute the file`s metadata class.
-        """
-        return self._meta
 
     @property
     def path(self: BaseFile) -> str | None:
@@ -779,7 +740,7 @@ class BaseFile:
         in it and its attributes (when those are custom classes).
         """
 
-        def recursively_get_pipelines_from_serializer(source_dict: dict = {}):
+        def recursively_get_pipelines_from_serializer(source_dict: dict) -> list:
             """
             Inner function to recursively get attributes from __serialize__ and verify if it has
             instances of Pipeline.
@@ -804,15 +765,11 @@ class BaseFile:
         return recursively_get_pipelines_from_serializer(self.__serialize__)
 
     @property
-    def pipelines_errors(self: BaseFile) -> list[tuple[str, list[Exception]]]:
+    def pipelines_errors(self: BaseFile) -> Iterator[tuple[str, list[Exception]]]:
         """
-        Method to return the list of errors that occurred in all pipelines availables.
+        Method to return the list of errors that occurred in all pipelines available.
         """
-        return [
-            (name, pipeline.errors)
-            for name, pipeline in self.pipelines
-            if pipeline.errors
-        ]
+        return map(lambda x: (x[0], x[1].errors), filter(lambda x: bool(x[1].errors), self.pipelines))
 
     @property
     def save_to(self: BaseFile) -> str | None:
@@ -855,7 +812,7 @@ class BaseFile:
         return self.storage.join(save_to, relative_path, complete_filename)
 
     @property
-    def thumbnail(self: BaseFile) -> BaseFile:
+    def thumbnail(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the thumbnail representation of current content.
         """
@@ -865,7 +822,7 @@ class BaseFile:
         return self._thumbnail.thumbnail
 
     @property
-    def preview(self: BaseFile) -> BaseFile:
+    def preview(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the animated preview of current content.
         """
@@ -918,7 +875,7 @@ class BaseFile:
 
         The following attributes are set for file:
         - complete_filename (filename, extension)
-        - _meta (compressed, lossless, packed)
+        - meta (compressed, lossless, packed)
 
         TODO: we could change add_valid_filename to also search for extension
          in mime_type of file, case there is any, for more efficient search
@@ -955,17 +912,17 @@ class BaseFile:
 
             # Save additional metadata to file.
             if self.extension:
-                self._meta.compressed = self.mime_type_handler.is_extension_compressed(
+                self.meta.compressed = self.mime_type_handler.is_extension_compressed(
                     self.extension
                 )
-                self._meta.lossless = self.mime_type_handler.is_extension_lossless(
+                self.meta.lossless = self.mime_type_handler.is_extension_lossless(
                     self.extension
                 )
-                self._meta.packed = self.mime_type_handler.is_extension_packed(
+                self.meta.packed = self.mime_type_handler.is_extension_packed(
                     self.extension
                 )
 
-            if self._meta.packed:
+            if self.meta.packed:
                 self._actions.to_list()
 
             return True
@@ -1007,20 +964,20 @@ class BaseFile:
 
             # Save additional metadata to file.
             if self.extension:
-                self._meta.compressed = self.mime_type_handler.is_extension_compressed(
+                self.meta.compressed = self.mime_type_handler.is_extension_compressed(
                     possible_extension
                 )
-                self._meta.lossless = self.mime_type_handler.is_extension_lossless(
+                self.meta.lossless = self.mime_type_handler.is_extension_lossless(
                     possible_extension
                 )
-                self._meta.packed = self.mime_type_handler.is_extension_packed(
+                self.meta.packed = self.mime_type_handler.is_extension_packed(
                     possible_extension
                 )
 
-                self._meta.partial = True
+                self.meta.partial = True
 
             #  We don't list objects that partial, so we mark it as listed already.
-            if self._meta.packed:
+            if self.meta.packed:
                 self._actions.listed()
 
             return True
@@ -1113,7 +1070,7 @@ class BaseFile:
 
             self._actions.hashed()
 
-    def get_content(self: BaseFile, item: int | str) -> BaseFile:
+    def get_content(self: BaseFile, item: int | str) -> tuple[BaseFile, int, str]:
         """
         Method to return an internal content by index or filename.
         """
@@ -1162,12 +1119,71 @@ class BaseFile:
         # Call pipeline with keyword_arguments saved in file object
         self.extract_data_pipeline.run(
             object_to_process=self,
-            **self._get_kwargs_for_pipeline("extract_data_pipeline"),
+            **self._get_kwargs_for_pipeline("extract_data_pipeline")
         )
 
         # Mark the file object as run its pipeline for extraction.
         # Set up its processing state to False
         self._state.processing = False
+
+    def files(self: BaseFile) -> Iterator[BaseFile]:
+        """
+        Method to return as attribute the internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        # Return only the list of file objects and not filename and file objects.
+        return self._content_files.files()
+
+    def files_as_generator(self: BaseFile) -> Iterator[BaseFile]:
+        """
+        Method to obtain the files of internal files as iterator generated directly from the buffer.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            for internal_file in self._content_files.unpack_data_pipeline.run_as_generator(object_to_process=self):
+                # Return only the list of file objects and not filename and file objects.
+                yield internal_file
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+    def types(self: BaseFile) -> Iterator[str]:
+        """
+        Method to return as attribute the types of internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+
+        The internal files will be available in memory while reset is not called and history not cleaned.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        # Return only the list of types for the file objects.
+        if len(self._content_files) > 0:
+            return self._content_files.files_type()
+
+        return iter({self.type})
 
     def save(self: BaseFile) -> None:
         """
@@ -1281,7 +1297,7 @@ class BaseFile:
         self._state.moving = False
         self._naming.previous_saved_extension = self.extension
 
-    def serialize(self: BaseFile) -> str:
+    def serialize(self: BaseFile) -> Any:
         """
         Method to serialize the current object using the serializer declared in attribute `serializer`.
         """

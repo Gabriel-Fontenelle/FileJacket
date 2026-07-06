@@ -20,28 +20,34 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filejacket <at> gabrielfontenelle.com` can be used.
 """
-from .animated import BaseAnimatedRender, StaticAnimatedRender, ImageAnimatedRender
-from .static import (
-    BaseStaticRender,
-    DocumentFirstPageRender,
-    ImageRender,
-    PSDRender,
-    VectorRender,
-    VectorSWFRender,
-    VideoRender,
-)
+from __future__ import annotations
 
-__all__ = [
-    # Static
-    "BaseStaticRender",
-    "DocumentFirstPageRender",
-    "ImageRender",
-    "PSDRender",
-    "VectorRender",
-    "VectorSWFRender",
-    "VideoRender",
-    # Animated
-    "BaseAnimatedRender",
-    "ImageAnimatedRender",
-    "StaticAnimatedRender",
-]
+from typing import Any
+
+from dill import dumps, loads, HIGHEST_PROTOCOL
+
+
+from filejacket.engines.serializer import Serializer
+
+__all__ = ["PickleSerializer"]
+
+
+class PickleSerializer(Serializer):
+    """
+    Class that allow handling of Serialization/Deserialization from object to pickle and from it to object.
+    This serializer don't support version.
+    """
+
+    @classmethod
+    def serialize(cls, source: Any) -> Any:
+        """
+        Method to serialize the input `source` using dill as extension to `pickle`.
+        """
+        return dumps(source, protocol=HIGHEST_PROTOCOL, recurse=True)
+
+    @classmethod
+    def deserialize(cls, source: Any) -> Any:
+        """
+        Method to deserialize the input `source` using dill as extension to `pickle`.
+        """
+        return loads(source, protocol=HIGHEST_PROTOCOL, recurse=True)

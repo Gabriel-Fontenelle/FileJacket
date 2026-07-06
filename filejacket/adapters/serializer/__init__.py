@@ -20,28 +20,31 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filejacket <at> gabrielfontenelle.com` can be used.
 """
-from .animated import BaseAnimatedRender, StaticAnimatedRender, ImageAnimatedRender
-from .static import (
-    BaseStaticRender,
-    DocumentFirstPageRender,
-    ImageRender,
-    PSDRender,
-    VectorRender,
-    VectorSWFRender,
-    VideoRender,
+
+from .pickle import PickleSerializer
+from .dictionary import (
+    FileDictionarySerializer,
+    FileWithContentDictionarySerializer,
+    FileDictionarySerializerReadonly
+)
+from .json import JSONSerializer
+from .json_simple import (
+    FileJsonSerializer,
+    FileWithContentJsonSerializer,
+    FileJsonSerializerReadonly
 )
 
 __all__ = [
-    # Static
-    "BaseStaticRender",
-    "DocumentFirstPageRender",
-    "ImageRender",
-    "PSDRender",
-    "VectorRender",
-    "VectorSWFRender",
-    "VideoRender",
-    # Animated
-    "BaseAnimatedRender",
-    "ImageAnimatedRender",
-    "StaticAnimatedRender",
+    # Pickle
+    "PickleSerializer",
+    # Full generic JSON
+    "JSONSerializer",
+    # Dictionary
+    "FileWithContentDictionarySerializer",
+    "FileDictionarySerializer",
+    "FileDictionarySerializerReadonly",
+    # Simplify JSON
+    "FileJsonSerializer",
+    "FileWithContentJsonSerializer",
+    "FileJsonSerializerReadonly"
 ]

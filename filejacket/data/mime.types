@@ -1465,6 +1465,7 @@ application/x-tex				tex
 application/x-tex-tfm				tfm
 application/x-texinfo				texi texinfo
 application/x-tgif				obj
+application/x-troff-man         mkv
 application/x-ustar				ustar
 application/x-wais-source				src
 # application/x-www-form-urlencoded

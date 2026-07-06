@@ -95,7 +95,7 @@ class FileOption:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {
+        attributes = (
             "allow_overwrite",
             "allow_override",
             "allow_search_hashes",
@@ -105,6 +105,6 @@ class FileOption:
             "create_backup",
             "save_hashes",
             "pipeline_raises_exception",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}

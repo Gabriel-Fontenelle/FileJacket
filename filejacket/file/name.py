@@ -88,12 +88,12 @@ class FileNaming:
 
         # We avoid storing information from `reserved_index` and `reserved_filenames` as those should reflect
         # the runtime and can be extensive.
-        attributes = {
+        attributes = (
             "history",
             "on_conflict_rename",
             "related_file_object",
             "previous_saved_extension",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 

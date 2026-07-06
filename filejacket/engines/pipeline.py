@@ -31,6 +31,7 @@ from ..exception import (
     ValidationError,
     PipelineError,
     ImproperlyConfiguredFile,
+    StopPipeline,
 )
 
 if TYPE_CHECKING:
@@ -72,7 +73,7 @@ class Processor:
         # Add parameters to processor for the pipeline to work: stopper, stop_value.
         # Don`t have stop value, so we consider the default `True`.
         processor = cls._set_default_attributes(
-            object_to_set=processor, attributes={"stopper": False, "stop_value": True, "dependencies": []}
+            object_to_set=processor, attributes={"dependencies": []}
         )
         return processor
 
@@ -81,21 +82,6 @@ class Processor:
         """
         Method to validate if the processor object has the necessary attributes to allow the pipeline to be run.
         """
-        # Check if processor has stop_value, stopper, process
-        if not hasattr(processor, "stop_value") or not isinstance(
-            processor.stop_value, (bool, list, tuple, set)
-        ):
-            raise ValidationError(
-                f"Class {processor.__class__.__name__} should implement the attribute `stop_value` and it should be "
-                "of type bool, list, tuple or set."
-            )
-
-        if not hasattr(processor, "stopper") or not isinstance(processor.stopper, bool):
-            raise ValidationError(
-                f"Class {processor.__class__.__name__} should implement the attribute `stopper` and it should be "
-                "of type bool."
-            )
-
         # Validate if processor has the method `process` to allow it to be used in pipeline.
         if not hasattr(processor, "process"):
             raise ValidationError(
@@ -290,23 +276,67 @@ class PipelineEngine:
                 )
                 ran += 1
 
-                if processor.stopper:
-                    # If processor is a step that should stop the whole pipeline
-                    # we verify if we reach the condition to it stop. By default, that
-                    # condition is True, but can be any value set-up in stop_value and
-                    # returned by processor.
-                    stop_value: bool | list | tuple | set = processor.stop_value
+            except StopPipeline as e:
+                # If processor is a step that should stop the whole pipeline it will
+                # raise the StopPipeline exception
+                result = e.args[1]
+                break
 
-                    should_stop: bool = (
-                        result in stop_value
-                        if isinstance(stop_value, (list, tuple, set))
-                        else result == stop_value
-                    )
-
-                    if should_stop:
-                        break
             except Exception as e:
-                message = f"An error occurred while running process {type(processor)}: {e}"
+                message = f"An error occurred while running process {processor.__class__.__name__}: {e}"
+
+                if pipeline_raises_exception:
+                    raise PipelineError(message) from e
+
+                errors_found.append(message)
+
+        # register statical data about pipelines.
+        self.processors_ran = ran
+        self.last_result = result
+        self.errors = errors_found
+
+    def run_as_generator(self, object_to_process: BaseFile, **parameters: Any) -> Iterator[Any]:
+        if not hasattr(object_to_process, "_option") or (
+            "FileOption" != object_to_process._option.__class__.__name__
+            and "FileOption" not in (base.__name__ for base in object_to_process._option.__class__.__bases__)
+        ):
+            raise ImproperlyConfiguredFile(
+                f"Object {type(object_to_process)} don`t have a option attribute of instance"
+                "FileOption to allow the pipeline to run properly."
+            )
+
+        pipeline_raises_exception = object_to_process._option.pipeline_raises_exception
+
+        # For each processor
+        ran: int = 0
+        result: bool | None = None
+        errors_found: list = []
+
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
+
+        # Using iter here allow for override of __iter__ to affect the running process.
+        for processor in self.__iter__():
+            try:
+                generator = processor.process_as_generator(
+                    object_to_process=object_to_process, **parameters
+                )
+                for element in generator:
+                    yield element
+
+                ran += 1
+
+            except StopPipeline as e:
+                # If processor is a step that should stop the whole pipeline it will
+                # raise the StopPipeline exception
+                result = e.args[1]
+                break
+
+            except ValidationError:
+                """As process_as_generator don't catch the validation error, we ignore it here."""
+
+            except Exception as e:
+                message = f"An error occurred while running process {processor.__class__.__name__}: {e}"
 
                 if pipeline_raises_exception:
                     raise PipelineError(message) from e

@@ -25,6 +25,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .base import BaseComparer
+from ..exception import StopPipeline
 
 if TYPE_CHECKING:
     from ..file import BaseFile
@@ -47,11 +48,6 @@ class DataCompare(BaseComparer):
     Class that define comparing of data between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: tuple[bool, bool] = (True, False)
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
@@ -63,6 +59,8 @@ class DataCompare(BaseComparer):
         Because the content buffers can have difference in sizes, we should make use
         of an additional buffer to save parts of content to compare. Using the lower size of buffer
         between the two files.
+
+        This method stops the pipeline if the result value is either False or True.
         """
 
         def compare_buffer():
@@ -86,11 +84,11 @@ class DataCompare(BaseComparer):
 
             # Comparing data between binary and string should return False, they are not the same anyway.
             if file_1.is_binary != file_2.is_binary:
-                return False
+                raise StopPipeline(f"Stopper called at {cls.__name__}", False)
 
             # Check if the iterator being compared is the same, to avoid consuming unequal parts of the same iterator.
             if id(content_1) == id(content_2):
-                return True
+                raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
             # Set-up initial data for additional buffer
             value_1: str | bytes | None
@@ -113,11 +111,8 @@ class DataCompare(BaseComparer):
 
         try:
             # Loop through content adding to new buffer to allow comparison between normalized sizes.
-            while not (value_1 is None and value_2 is None):
-                # We should avoid raising StopIteration so we define a default value to return instead.
-                value_1 = next(content_1, None)
-                value_2 = next(content_2, None)
-
+            # We should avoid raising StopIteration so we define a default value to return instead.
+            while (value_1 := next(content_1, None)) is not None or (value_2 := next(content_2, None)) is not None:
                 if value_1 is not None:
                     # Add data to buffer
                     buffer_1 += value_1
@@ -137,11 +132,11 @@ class DataCompare(BaseComparer):
                 # compare_buffer will raise StopIterator case the comparison is False.
                 buffer_1, buffer_2 = compare_buffer()
 
-            return True
+            raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
         except StopIteration:
             # Case StopIteration as raised the comparison is false.
-            return False
+            raise StopPipeline(f"Stopper called at {cls.__name__}", False)
 
 
 class SizeCompare(BaseComparer):
@@ -149,21 +144,23 @@ class SizeCompare(BaseComparer):
     Class that define comparing of size of content between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if sizes are the same.
+        This method check if the sizes are the same.
+
+        This method stops the pipeline if the result value is False.
         """
         if not len(file_1) or not len(file_2):
             return None
 
-        return len(file_1) == len(file_2)
+        result = len(file_1) == len(file_2)
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
 
 
 class HashCompare(BaseComparer):
@@ -171,27 +168,31 @@ class HashCompare(BaseComparer):
     Class that define comparing of hash between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: tuple[bool, bool] = (True, False)
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
         This method check if hashes are the same.
+
+        This method stops the pipeline if the result value is either False or True.
         """
         if not file_1.hashes or not file_2.hashes:
             return None
 
-        for hash_name in set(file_1.hashes.keys()).intersection(
-            set(file_2.hashes.keys())
-        ):
-            if file_1.hashes[hash_name] != file_2.hashes[hash_name]:
-                return False
+        intersection = list(filter(
+            lambda hash_name: file_1.hashes[hash_name]
+                              and file_2.hashes[hash_name],
+            set(file_1.hashes.keys()).intersection(set(file_2.hashes.keys()))
+        ))
 
-        return True
+        if not intersection:
+            return None
+
+        for hash_name in intersection:
+            if file_1.hashes[hash_name] != file_2.hashes[hash_name]:
+                raise StopPipeline(f"Stopper called at {cls.__name__}", False)
+
+        raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
 
 class LousyNameCompare(BaseComparer):
@@ -199,16 +200,13 @@ class LousyNameCompare(BaseComparer):
     Class that define comparing of filename between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if the names are lousily the same.
+        This method check if the names are lousily the same.
+
+        This method stops the pipeline if the result value is False.
         """
         if not file_1.filename or not file_2.filename:
             return None
@@ -222,7 +220,12 @@ class LousyNameCompare(BaseComparer):
                 file_1.extension
             ) == file_2.mime_type_handler.get_mimetype(file_2.extension)
 
-        return file_1.complete_filename == file_2.complete_filename and extension
+        result = file_1.complete_filename == file_2.complete_filename and extension
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
 
 
 class NameCompare(BaseComparer):
@@ -230,21 +233,23 @@ class NameCompare(BaseComparer):
     Class that define comparing of filename between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if complete filename are the same.
+        This method check if the complete filename are the same.
+
+        This method stops the pipeline if the result value is False.
         """
         if not file_1.filename or not file_2.filename:
             return None
 
-        return file_1.complete_filename == file_2.complete_filename
+        result = file_1.complete_filename == file_2.complete_filename
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
 
 
 class MimeTypeCompare(BaseComparer):
@@ -252,21 +257,23 @@ class MimeTypeCompare(BaseComparer):
     Class that define comparing of mimetype between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if mimetypes are the same.
+        This method check if the mimetypes are the same.
+
+        This method stops the pipeline if the result value is False.
         """
         if file_1.mime_type is None or file_2.mime_type is None:
             return None
 
-        return file_1.mime_type == file_2.mime_type
+        result = file_1.mime_type == file_2.mime_type
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
 
 
 class BinaryCompare(BaseComparer):
@@ -274,16 +281,13 @@ class BinaryCompare(BaseComparer):
     Class that define comparing of binary attribute between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if attribute binary are the same.
+        This method check if the attribute binary are the same.
+
+        This method stops the pipeline if the result value is False.
         """
         file_1_is_binary = file_1.is_binary
         file_2_is_binary = file_2.is_binary
@@ -291,7 +295,12 @@ class BinaryCompare(BaseComparer):
         if file_1_is_binary is None or file_2_is_binary is None:
             return None
 
-        return file_1_is_binary == file_2_is_binary
+        result = file_1_is_binary == file_2_is_binary
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
 
 
 class TypeCompare(BaseComparer):
@@ -299,18 +308,21 @@ class TypeCompare(BaseComparer):
     Class that define comparing of type between two Files for use in Comparer Pipeline.
     """
 
-    stop_value: bool = False
-    """
-    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> bool | None:
         """
         Method used to check if two files are the same.
-        This method check the if attribute binary are the same.
+        This method check if the attribute binary are the same.
+
+        This method stops the pipeline if the result value is False.
         """
         if file_1.type is None or file_2.type is None:
             return None
 
-        return file_1.type == file_2.type
+        result = file_1.type == file_2.type
+
+        if not result:
+            raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+        return result
+
