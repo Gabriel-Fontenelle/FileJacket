@@ -161,7 +161,26 @@ class ImageEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError(
-            "The method get_bytes_from_image should be override in child class."
+            "The method get_bytes should be override in child class."
+        )
+
+    def get_bytes_uncompressed(self) -> bytes:
+        """
+        Method to obtain the bytes' representation for the content of the current image object
+        in uncompressed format.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_bytes_uncompressed should be override in child class."
+        )
+
+    def get_keypoints_and_descriptors(self, feature_matcher = "orb") -> tuple:
+        """
+        Method to obtain the tuple of keypoint and descriptor that an image can have.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_keypoints_and_descriptors should be override in child class."
         )
 
     def get_relative_size(
@@ -209,6 +228,13 @@ class ImageEngine:
         raise NotImplementedError(
             "The method get_size should be override in child class."
         )
+
+    def get_mode(self) -> str:
+        """
+        Method to obtain the mode of current image, as RGB, RGBA, L, G, etc.
+        This method should be overwritten in child class.
+        """
+        return self.image.mode
 
     def has_sequence(self) -> bool:
         """
