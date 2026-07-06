@@ -66,11 +66,11 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
         - relative_path
         - filename
         - extension
-        - _meta (compressed, lossless)
+        - meta (compressed, lossless)
 
         This method make use of overrider and consider partial files.
 
-        # As this extractor don`t guarantee that the file actually exists we don`t mark it
+        # As this extractor don't guarantee that the file actually exists we don't mark it
         as saved.
         """
         if not file_object.path:
@@ -127,7 +127,7 @@ class FilenameFromMetadataExtractor(BaseExtractor):
         This method will save data in the following attributes of `file_object`:
         - filename
         - extension
-        - _meta (compressed, lossless, disposition)
+        - meta (compressed, lossless, disposition)
 
         This method make use of overrider.
         """
@@ -523,7 +523,7 @@ class MetadataExtractor(BaseExtractor):
         - type
         - create_date
         - update_date
-        - _meta (expire, language, packed)
+        - meta (expire, language, packed)
 
         This method make use of overrider.
         """
