@@ -29,42 +29,25 @@ from io import IOBase
 from typing import Any, Type, TYPE_CHECKING
 
 import pytz
-from dill import dumps, loads, HIGHEST_PROTOCOL
 
-from ..adapters.storage import LinuxFileSystem
+from filejacket.adapters.storage import LinuxFileSystem
+from filejacket.engines.serializer import Serializer
 
 if TYPE_CHECKING:
-    from .storage import Storage
+    from filejacket.engines.storage import StorageEngine
     from json_tricks import hashodict
     from filejacket.file import BaseFile
 
 
-__all__ = ["PickleSerializer", "JSONSerializer"]
+__all__ = ["JSONSerializer"]
 
 
-class PickleSerializer:
+class JSONSerializer(Serializer):
     """
-    Class that allow handling of Serialization/Deserialization from object to pickle and from it to object.
-    """
+    Class that allow handling of Serialization/Deserialization from object to JSON string and from it to object.
+    This serializer currently don't support version.
 
-    @classmethod
-    def serialize(cls, source: Any) -> Any:
-        """
-        Method to serialize the input `source` using dill as extension to `pickle`.
-        """
-        return dumps(source, protocol=HIGHEST_PROTOCOL, recurse=True)
-
-    @classmethod
-    def deserialize(cls, source: Any) -> Any:
-        """
-        Method to deserialize the input `source` using dill as extension to `pickle`.
-        """
-        return loads(source, protocol=HIGHEST_PROTOCOL, recurse=True)
-
-
-class JSONSerializer:
-    """
-    Class that allow handling of Serialization/Deserialization from object to json string and from it to object.
+    TODO: Support __version__.
     """
 
     @classmethod
@@ -236,7 +219,7 @@ class JSONSerializer:
         )
 
     @classmethod
-    def deserialize(cls, source: Any) -> dict[str, Any]:
+    def deserialize(cls, source: Any) -> BaseFile:
         """
         Method to deserialize the input `source` using json_tricks as extension to `json`.
         """
@@ -250,21 +233,12 @@ class JSONSerializer:
             Internal function to parse the __datetime__ and __time__ dictionary.
             This function solves a problem with the original decoder where importing pytz results in attribute error.
             """
-
-            def get_tz(dct):
-                """
-                Internal function to process the tzinfo key from dictionary to be a tzinfo object.
-                """
-                if "tzinfo" not in dct:
-                    return None
-
-                return pytz.timezone(dct["tzinfo"])
-
             if not isinstance(dct, dict):
                 return dct
 
+            tzinfo = pytz.timezone(info) if (info:= dct.get("tzinfo", "")) else None
+
             if "__time__" in dct:
-                tzinfo = get_tz(dct)
                 return time(
                     hour=dct.get("hour", 0),
                     minute=dct.get("minute", 0),
@@ -274,7 +248,6 @@ class JSONSerializer:
                 )
 
             elif "__datetime__" in dct:
-                tzinfo = get_tz(dct)
                 dt = datetime(
                     year=dct.get("year", 0),
                     month=dct.get("month", 0),
@@ -284,10 +257,7 @@ class JSONSerializer:
                     second=dct.get("second", 0),
                     microsecond=dct.get("microsecond", 0),
                 )
-                if tzinfo is None:
-                    return dt
-
-                return tzinfo.localize(dt)
+                return tzinfo.localize(dt) if tzinfo else dt
 
             return dct
 
@@ -311,7 +281,7 @@ class JSONSerializer:
                 return dct
 
             if "__buffer__" in dct:
-                storage: Type[Storage] = json_class_hook(dct.get("storage"))
+                storage: Type[StorageEngine] = json_class_hook(dct.get("storage"))
 
                 name: str | None = dct.get("name")
 
@@ -359,36 +329,40 @@ class JSONSerializer:
                 Internal function to recursively to process list, tuple, and dict that could have an object with
                 __serialize__ property.
                 """
+
                 for index, item in listing:
-                    if isinstance(item, dict) and "__self__" in item:
-                        listing[index] = cache[item["id"]]
-                    elif (
-                        hasattr(item, "__serialize__")
-                        and not callable(item)
-                        and id(item) not in cache["done"]
-                    ):
-                        fix_self_reference(item)
-                    elif isinstance(item, dict):
-                        fix_iterator_value(item.items())
-                    elif isinstance(item, (list, tuple)):
-                        fix_iterator_value(enumerate(item))
+                    match item:
+                        case dict():
+                            if "__self__" in item:
+                                listing[index] = cache[item["id"]]
+                            else:
+                                fix_iterator_value(item.items())
+                        case list() | tuple() | set():
+                            fix_iterator_value(enumerate(item))
+                        case _:
+                            if (
+                                hasattr(item, "__serialize__")
+                                and not callable(item)
+                                and id(item) not in cache["done"]
+                            ):
+                                fix_self_reference(item)
 
             for attribute, value in instance.__serialize__.items():
-                if isinstance(value, dict) and "__self__" in value:
-                    setattr(instance, attribute, cache[value["id"]])
-
-                elif isinstance(value, dict):
-                    fix_iterator_value(value.items())
-
-                elif isinstance(value, (list, tuple)):
-                    fix_iterator_value(enumerate(value))
-
-                elif (
-                    hasattr(value, "__serialize__")
-                    and not callable(value)
-                    and id(value) not in cache["done"]
-                ):
-                    fix_self_reference(value)
+                match value:
+                    case dict():
+                        if "__self__" in value:
+                            setattr(instance, attribute, cache[value["id"]])
+                        else:
+                            fix_iterator_value(value.items())
+                    case list() | tuple() | set():
+                        fix_iterator_value(enumerate(value))
+                    case _:
+                        if (
+                            hasattr(value, "__serialize__")
+                            and not callable(value)
+                            and id(value) not in cache["done"]
+                        ):
+                            fix_self_reference(value)
 
         from json_tricks import loads as json_loads
 

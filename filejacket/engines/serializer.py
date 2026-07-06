@@ -20,22 +20,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filejacket <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
 
-from .generic import JSONSerializer, PickleSerializer
-from .specific import (
-    FileDictionarySerializer,
-    FileJsonSerializer,
-    FileWithContentDictionarySerializer,
-    FileWithContentJsonSerializer,
-)
+from abc import ABC, abstractmethod
+from typing import Any
 
-__all__ = [
-    # Generic
-    "PickleSerializer",
-    "JSONSerializer",
-    # Specific
-    "FileDictionarySerializer",
-    "FileJsonSerializer",
-    "FileWithContentDictionarySerializer",
-    "FileWithContentJsonSerializer",
-]
+
+class Serializer(ABC):
+    """
+    This class is not called SerializerEngine because it was meant to be used by third-party users.
+    While the `<group_name>Engine` classes can be used by third-party users for customization through
+    OOP they are primary for internal use.
+    """
+
+    @classmethod
+    @abstractmethod
+    def serialize(cls, source: Any) -> Any:
+        ...
+
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, source: Any) -> Any:
+        ...
+    
