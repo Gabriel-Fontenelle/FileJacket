@@ -27,6 +27,7 @@ from .static import (
     ImageRender,
     PSDRender,
     VectorRender,
+    VectorSWFRender,
     VideoRender,
 )
 
@@ -36,6 +37,8 @@ __all__ = [
     "DocumentFirstPageRender",
     "ImageRender",
     "PSDRender",
+    "VectorRender",
+    "VectorSWFRender",
     "VideoRender",
     # Animated
     "BaseAnimatedRender",
