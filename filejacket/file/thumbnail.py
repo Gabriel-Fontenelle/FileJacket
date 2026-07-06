@@ -201,6 +201,7 @@ class FileThumbnail:
         "filejacket.pipelines.render.static.ImageRender",
         "filejacket.pipelines.render.static.PSDRender",
         "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
         "filejacket.pipelines.render.static.VideoRender",
     )
     """
