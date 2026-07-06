@@ -36,6 +36,7 @@ from .name import FileNaming
 from .option import FileOption
 from .state import FileState
 from .thumbnail import FileThumbnail
+from .versioning import migrate_schema
 from ..adapters.mimetype import LibraryMimeTyper
 from ..adapters.pipeline import PipelineSequential, PipelineOrderedDependency, PipelineContent
 from ..adapters.storage import LinuxFileSystem, WindowsFileSystem
@@ -50,12 +51,12 @@ from ..exception import (
     ValidationError,
 )
 from ..handler import URI
-from ..serializer import JSONSerializer
+from ..adapters.serializer import JSONSerializer
 
 if TYPE_CHECKING:
     from io import BytesIO, StringIO
 
-    from ..serializer import PickleSerializer
+    from ..adapters.serializer import PickleSerializer
     from ..adapters.mimetype import MimeTypeEngine
     from ..adapters.storage import StorageEngine
     from ..pipelines.base import  BasePackager
@@ -276,6 +277,14 @@ class BaseFile:
         """
         return cls.serializer.deserialize(source=source)
 
+    @staticmethod
+    def current_version() -> int:
+        """
+        Class method to obtain the current version for the class. This is useful when using multiple versions
+        of this class and its serializers.
+        """
+        return 2
+
     def __init__(self: BaseFile, **kwargs: Any) -> None:
         """
         Method to instantiate BaseFile. This method can be used for any child class, only needing
@@ -286,13 +295,9 @@ class BaseFile:
         """
         # In order to allow multiple versions of the serialized object to be correctly parsed with
         # the last version we should make conversions of attributes here.
-        version: str = kwargs.pop("__version__", "")
-        match version:
-            case "1":
-                """Version 1 has the _meta with old name"""
-                if "_meta" in kwargs:
-                    kwargs["meta"] = kwargs["_meta"]
-                    del kwargs["_meta"]
+        version_key = "__version__"
+        version = version_key in kwargs
+        kwargs = migrate_schema(data=kwargs, current_version=self.current_version(), version_key=version_key)
 
         # Set up storage with default based on operational system
         if not self.storage:
@@ -456,7 +461,7 @@ class BaseFile:
         Method to indicate the current version of BaseFile in order to allow changes between serialization
         to be handled by `__init__()`
         """
-        return "1"
+        return "2"
 
     @property
     def __serialize__(self: BaseFile) -> dict[str, Any]:
