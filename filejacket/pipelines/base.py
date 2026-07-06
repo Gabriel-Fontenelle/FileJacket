@@ -1027,7 +1027,7 @@ class BaseRenamer:
     Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
-    file_system_handler: Type[StorageEngine] = StorageEngine
+    storage: Type[StorageEngine] = StorageEngine
     """
     Variable to store the local storage system.
     """
@@ -1082,13 +1082,13 @@ class BaseRenamer:
         The keyword argument `reserved_names` allow for override of current list of reserved_names in pipeline. This
         override will affect the class and thus all usage of `reserved_names`. It isn`t thread safe.
 
-        FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
+        FUTURE CONSIDERATION: Making the pipeline multi thread or multiprocess only will require that
         a lock be put between usage of get_name.
         FUTURE CONSIDERATION: Multi thread will need to consider that the attribute `file_system_handler`
         is shared between the reference of the class and all object of it and will have to be change the
-        code (multi process don't have this problem).
+        code (multiprocess don't have this problem).
 
-        This processors return boolean to indicate that process was ran successfully.
+        These processors return boolean to indicate that process was ran successfully.
 
         This method can throw BlockingIOError when trying to rename the file.
         The `Pipeline.run` method will catch it.
