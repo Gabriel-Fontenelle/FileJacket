@@ -29,6 +29,9 @@ from ..exception import SerializerError
 __all__ = ["FileMetadata"]
 
 
+OPTIONAL_METADATA =  {"checksum", "loaded", "preview", "thumbnail"}
+
+
 class FileMetadata:
     """
     Class that store file instance metadata.
@@ -93,7 +96,7 @@ class FileMetadata:
         Method to create the current object using the keyword arguments.
         """
         for key, value in kwargs.items():
-            if hasattr(self, key) or key in {"checksum", "loaded", "thumbnail"}:
+            if hasattr(self, key) or key in OPTIONAL_METADATA:
                 setattr(self, key, value)
             else:
                 raise SerializerError(
@@ -105,7 +108,7 @@ class FileMetadata:
         Method to set attributes that are additional to its own dict at `extra_data`.
         """
         # hasattr method will call getattr that will call `__getattr__`.
-        if hasattr(self, name):
+        if hasattr(self, name) or name in OPTIONAL_METADATA:
             self.__dict__[name] = value
             return
 
@@ -136,16 +139,10 @@ class FileMetadata:
         """
 
         attributes = ("packed", "compressed", "lossless", "hashable", "extra_data")
-        optional_attributes = (
-            "checksum",
-            "loaded",
-            "preview",
-            "thumbnail",
-        )
 
         class_vars = {key: getattr(self, key) for key in attributes}
 
-        for attribute in optional_attributes:
+        for attribute in OPTIONAL_METADATA:
             if hasattr(self, attribute):
                 class_vars[attribute] = getattr(self, attribute)
 
