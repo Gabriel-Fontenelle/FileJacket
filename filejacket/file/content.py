@@ -310,11 +310,6 @@ class FileContent:
     Class that store file instance content.
     """
 
-    related_file_object: BaseFile
-    related_file_object = None
-    """
-    Variable to work as shortcut for the current related object for the hashes and other data.
-    """
     _block_size: int = 256
     """
     Block size of file to be loaded in each step of iterator.
@@ -326,6 +321,12 @@ class FileContent:
     _iterable_in_use: bool = False
     """
     Indicate whether the method next is currently being used to consume the buffer.
+    """
+
+    inner: bool = False
+    """
+    Indicate whether the content is from the inside of another content. New content obtained from
+    pos-processed compressed buffer are inner content, while the compressed buffer content is not.  
     """
 
     # Buffer handles
@@ -386,8 +387,7 @@ class FileContent:
         if not raw_value:
             raise ValueError("Value pass to FileContent must not be empty!")
 
-        # Binary value of related_file_object should be set up here, as it came from attribute is_binary from
-        # content.
+        # Binary value for file is set in buffer_helper and is used for attribute is_binary from file.
         if isinstance(raw_value, str):
             # Convert raw content to buffer
             self.buffer_helper = BufferStr()
@@ -486,7 +486,6 @@ class FileContent:
             "buffer",
             "buffer_helper",
             "cache_helper",
-            "related_file_object",
             "_block_size",
             "_buffer_encoding",
             "cached",
@@ -524,26 +523,16 @@ class FileContent:
         the data in memory from the cache returning the content.
 
         This method will not cache the content in memory if `self.cache_helper` is `NonCache`.
+        The method can raise OperationNotAllowed or EmptyContentError.
         """
         if self._cached_content is None:
             self._cached_content = self.cache_helper(buffer_helper=self.buffer_helper)
 
-        try:
-            # Consume content passing the iterator to the cache class.
-            # The `NonCache` class will not, and should not, perform any action on the iterator.
-            self._cached_content.consume(iterator=self)
+        # Consume content passing the iterator to the cache class.
+        # The `NonCache` class will not, and should not, perform any action on the iterator.
+        self._cached_content.consume(iterator=self)
 
-            return self._cached_content.load_from_cache()
-
-        except OperationNotAllowed as e:
-            raise ImproperlyConfiguredFile(
-                f"The file {self.related_file_object} is not set-up to load to memory its content. "
-                "You should call `_content.content_as_buffer` instead of `_content.content`"
-            ) from e
-        except EmptyContentError as e:
-            raise EmptyContentError(
-                f"No content was loaded for file {self.related_file_object.complete_filename}"
-            ) from e
+        return self._cached_content.load_from_cache()
 
     @property
     def content_as_buffer(self) -> BytesIO | StringIO:

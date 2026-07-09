@@ -515,15 +515,12 @@ class TransmuterContent(TransmuterEngine):
         """
         dict_to_return = value.__serialize__
 
-        is_internal_file = getattr(value.related_file_object.meta, "internal", False)
-
-        if value.should_load_to_memory and not is_internal_file:
+        if value.should_load_to_memory and not value.inner:
             raise SerializerError(
                 "Content for file should be serialized as it should be load to memory and may not be available later.\nPlease, use a serializer that saves the content."
             )
 
         del dict_to_return["_cached_content"]
-        del dict_to_return["related_file_object"]
 
         transmuter_class_object = TransmuterObjectClass()
         transmuter_class_object.serializer = self.serializer
@@ -531,7 +528,7 @@ class TransmuterContent(TransmuterEngine):
         transmuter_class = TransmuterClass()
         transmuter_class.serializer = self.serializer
 
-        if is_internal_file:
+        if value.inner:
             # Buffer = filename:class:mode:
             buffer_name = getattr(dict_to_return["buffer"], "filename", "")
             buffer_mode = getattr(dict_to_return["buffer"], "mode", "")
@@ -614,7 +611,6 @@ class TransmuterContent(TransmuterEngine):
 
         return FileContent(
             raw_value=None,
-            related_file_object=reference,
             buffer=buffered,
             buffer_helper=buffer_helper_object,
             cache_helper=cache_helper_class,

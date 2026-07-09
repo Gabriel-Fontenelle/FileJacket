@@ -49,6 +49,7 @@ from ..exception import (
     ReservedFilenameError,
     SerializerError,
     ValidationError,
+    EmptyContentError,
 )
 from ..handler import URI
 from ..adapters.serializer import JSONSerializer
@@ -558,7 +559,17 @@ class BaseFile:
         if self._content is None:
             return None
 
-        return self._content.content
+        try:
+            return self._content.content
+        except OperationNotAllowed as e:
+            raise ImproperlyConfiguredFile(
+                f"The file {self} is not set-up to load to memory its content. "
+                "You should call `_content.content_as_buffer` instead of `_content.content`"
+            ) from e
+        except EmptyContentError as e:
+            raise EmptyContentError(
+                f"No content was loaded for file {self.complete_filename}"
+            ) from e
 
     @content.setter
     def content(self: BaseFile, value: str | bytes) -> None:

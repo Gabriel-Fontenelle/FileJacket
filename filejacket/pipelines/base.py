@@ -959,6 +959,7 @@ class BasePackager:
             internal_file_object.content_as_buffer = cls.content_buffer(
                 file_object=file_object, internal_file_name=filename, mode=mode
             )
+            internal_file_object._content.inner = True
 
             # Set up metadata for internal file
             internal_file_object.meta.hashable = False
