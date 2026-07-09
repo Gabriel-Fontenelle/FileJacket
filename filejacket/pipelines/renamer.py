@@ -51,7 +51,7 @@ class WindowsRenamer(BaseRenamer):
         the style of Windows: `new name (1).ext`
         """
         # Prepare filename and extension removing enumeration from filename
-        # and setting up a empty string is extension is None
+        # and setting up an empty string is extension is None
         filename = cls.enumeration_pattern.sub("", filename)
         formatted_extension: str = f".{extension}" if extension else ""
 
@@ -82,7 +82,7 @@ class LinuxRenamer(BaseRenamer):
         the style of Linux: `new name - 1.ext`
         """
         # Prepare filename and extension removing enumeration from filename
-        # and setting up a empty string is extension is None
+        # and setting up an empty string is extension is None
         filename = cls.enumeration_pattern.sub("", filename)
         formatted_extension: str = f".{extension}" if extension else ""
 
