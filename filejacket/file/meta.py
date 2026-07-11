@@ -22,6 +22,7 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
+from itertools import chain
 from typing import Any
 
 from ..exception import SerializerError
@@ -29,7 +30,7 @@ from ..exception import SerializerError
 __all__ = ["FileMetadata"]
 
 
-OPTIONAL_METADATA =  {"checksum", "loaded", "preview", "thumbnail"}
+OPTIONAL_METADATA: tuple = ("checksum", "loaded", "preview", "thumbnail")
 
 
 class FileMetadata:
@@ -138,12 +139,11 @@ class FileMetadata:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = ("packed", "compressed", "lossless", "hashable", "extra_data")
+        required_attributes: set[str] = {"packed", "compressed", "lossless", "hashable", "extra_data"}
 
-        class_vars = {key: getattr(self, key) for key in attributes}
+        all_attributes = chain(required_attributes, OPTIONAL_METADATA)
 
-        for attribute in OPTIONAL_METADATA:
-            if hasattr(self, attribute):
-                class_vars[attribute] = getattr(self, attribute)
-
-        return class_vars
+        return {
+            key: getattr(self, key) for key in all_attributes
+            if hasattr(self, key) or key in required_attributes
+        }
