@@ -43,7 +43,7 @@ class FileHashes:
     Descriptor to storage the digested hashes for the file instance.
     This must be instantiated at `__init__` class. 
     """
-    _loaded: list[Any]
+    _loaded: list[str]
     """
     Descriptor to storage the digested hashes that were loaded from external source. 
     This must be instantiated at `__init__` class.
@@ -131,7 +131,7 @@ class FileHashes:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes: set = {"_cache", "_loaded", "related_file_object"}
+        attributes: set = {"_cache", "_loaded", "related_file_object", "history"}
 
         return {key: getattr(self, key) for key in attributes}
 
@@ -140,7 +140,7 @@ class FileHashes:
         Method to clean the history of validation results.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
-        self.history: dict[str, list[str]] = {}
+        self.history.clear()
 
     def keys(self) -> Iterator[str]:
         """
@@ -185,7 +185,7 @@ class FileHashes:
                 for block in hash_file.content_as_iterator:
                     content += block
 
-                # Change file`s filename inside content of hash file.
+                # Change file's filename inside content of hash file.
                 content = content.replace(
                     f"{hash_file.filename}.{hasher_name}",
                     f"{new_filename}.{hasher_name}",
@@ -209,20 +209,25 @@ class FileHashes:
         for hash_name in self._loaded or self._cache.keys():
             hex_value, hash_file, processor = self._cache[hash_name]
             # Compare content with hex_value
-            result = processor.check_hash(
+            match_result, digested_hash = processor.check_hash(
                 object_to_process=self.related_file_object, compare_to_hex=hex_value
             )
 
             # Add result to history.
             if self.history is None:
-                self.clean_history()
+                self.history: dict[str, list[tuple[str | None, bool | None]]] = {}
 
             if hash_name not in self.history:
-                self.history[hash_name] = [result]
+                self.history[hash_name] = [(digested_hash, match_result)]
             else:
-                self.history[hash_name].append(result)
+                self.history[hash_name].append((digested_hash, match_result))
 
-            if result is False:
+            if match_result is None:
+                raise ValidationError(
+                    f"File {self.related_file_object} don`t have content to check integrity with "
+                    f"{hash_name}!"
+                )
+            if match_result is False:
                 raise ValidationError(
                     f"File {self.related_file_object} don`t pass the integrity check with "
                     f"{hash_name}!"

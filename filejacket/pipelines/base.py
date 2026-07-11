@@ -191,7 +191,7 @@ class BaseHasher:
                     self.hash_loaded_from_file = True
 
     @classmethod
-    def check_hash(cls, **kwargs: Any) -> bool | None:
+    def check_hash(cls, **kwargs: Any) -> tuple[bool | None, str | None]:
         """
         Method to verify integrity of file checking if hash save in file object is the same
         that is generated from file content. File content can be from File System, Memory or Stream
@@ -210,17 +210,17 @@ class BaseHasher:
         ] | None = object_to_process.content_as_iterator
 
         if content_iterator is None:
-            return None
+            return None, None
 
         cls.generate_hash(
             hash_instance=hash_instance,
             content_iterator=content_iterator,
             encoding=object_to_process._content.buffer_helper.encoding,
         )
-        digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
-
         # Change to lower case to make comparing of hashes case-insensitive.
-        return digested_hex_value.lower() == hex_value.lower()
+        digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance).lower()
+
+        return digested_hex_value == hex_value.lower(), digested_hex_value
 
     @classmethod
     def digest_hash(cls, hash_instance: Any) -> str:
