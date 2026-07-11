@@ -25,7 +25,7 @@ from __future__ import annotations
 # first-party
 from datetime import datetime
 from os import name
-from typing import Type, Any, Iterator, TYPE_CHECKING
+from typing import Type, Any, Iterator, TYPE_CHECKING, Callable
 
 # modules
 from .action import FileActions
@@ -272,10 +272,25 @@ class BaseFile:
     """
 
     @classmethod
-    def deserialize(cls: Type[BaseFile], source: str) -> BaseFile:
+    def deserialize(
+        cls: Type[BaseFile],
+        source: str,
+        serializer_evaluator: Callable | None = None,
+        **attributes_for_evaluator: dict[str, Any]
+    ) -> BaseFile:
         """
         Class method to deserialize the source and return the instance object.
+        `serializer_evaluator` can be used to identify which serializer to use based on source,
+        to allow it to work, the parameter must be a function that returns a Serializer class.
+
+        Parameter `attributes_for_evaluator` can be used to pass new `default_serializer_attributes` to the
+        evaluator, or any other parameter for a custom evaluator.
         """
+        if serializer_evaluator:
+            # Serializer from source
+            return serializer_evaluator(source, **attributes_for_evaluator).deserialize(source=source)
+
+        # Serializer from class
         return cls.serializer.deserialize(source=source)
 
     @staticmethod
