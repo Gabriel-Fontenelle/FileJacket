@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import pytest
 
-from filejacket.file import FileActions
+from filejacket.file.action import FileActions
 
 
 @pytest.fixture
@@ -8,7 +10,7 @@ def file_action():
     return FileActions()
 
 
-def test_class_default_attributes(file_action):
+def test_class_default_attributes(file_action: FileActions):
     # Available actions for file object
     assert file_action.save is False
     assert file_action.extract is False
@@ -43,7 +45,7 @@ def test_class_default_attributes(file_action):
         {"was_renamed": True, "was_moved": True, "was_hashed": True, "was_listed": True}
     ]
 )
-def test_class_file_action_method__init___should_set_values_when_informed(kwargs):
+def test_class_file_action_method__init___should_set_values_when_informed(kwargs: dict[str, bool]):
     file_action = FileActions(**kwargs)
     for key, value in kwargs.items():
         assert getattr(file_action, key) is value
@@ -62,7 +64,7 @@ def test_class_file_action_method__init___should_set_values_when_informed(kwargs
         {"was_renamed": True, "was_moved": True, "was_hashed": True, "was_listed": True}
     ]
 )
-def test_class_file_action_method__serialize__(kwargs):
+def test_class_file_action_method__serialize__(kwargs: dict[str, bool]):
     file_action = FileActions(**kwargs)
     
     serialized = file_action.__serialize__
@@ -89,7 +91,7 @@ def test_class_file_action_method__serialize__(kwargs):
     }
 
 
-def test_class_file_action_method_to_extract(file_action):
+def test_class_file_action_method_to_extract(file_action: FileActions):
     assert file_action.extract is False
     assert file_action.was_extracted is False
     
@@ -99,7 +101,7 @@ def test_class_file_action_method_to_extract(file_action):
     assert file_action.was_extracted is False
 
 
-def test_class_file_action_method_extracted(file_action):
+def test_class_file_action_method_extracted(file_action: FileActions):
     assert file_action.extract is False
     assert file_action.was_extracted is False
     
@@ -109,7 +111,7 @@ def test_class_file_action_method_extracted(file_action):
     assert file_action.was_extracted is True
 
 
-def test_class_file_action_method_to_save(file_action):
+def test_class_file_action_method_to_save(file_action: FileActions):
     assert file_action.save is False
     assert file_action.was_saved is False
     
@@ -119,7 +121,7 @@ def test_class_file_action_method_to_save(file_action):
     assert file_action.was_saved is False
 
 
-def test_class_file_action_method_saved(file_action):
+def test_class_file_action_method_saved(file_action: FileActions):
     assert file_action.save is False
     assert file_action.was_saved is False
     
@@ -129,7 +131,7 @@ def test_class_file_action_method_saved(file_action):
     assert file_action.was_saved is True
 
 
-def test_class_file_action_method_to_rename(file_action):
+def test_class_file_action_method_to_rename(file_action: FileActions):
     assert file_action.rename is False
     assert file_action.was_renamed is False
     
@@ -139,7 +141,7 @@ def test_class_file_action_method_to_rename(file_action):
     assert file_action.was_renamed is False
 
 
-def test_class_file_action_method_renamed(file_action):
+def test_class_file_action_method_renamed(file_action: FileActions):
     assert file_action.rename is False
     assert file_action.was_renamed is False
     
@@ -149,7 +151,7 @@ def test_class_file_action_method_renamed(file_action):
     assert file_action.was_renamed is True
 
 
-def test_class_file_action_method_to_move(file_action):
+def test_class_file_action_method_to_move(file_action: FileActions):
     assert file_action.move is False
     assert file_action.was_moved is False
     
@@ -159,7 +161,7 @@ def test_class_file_action_method_to_move(file_action):
     assert file_action.was_moved is False
 
 
-def test_class_file_action_method_moved(file_action):
+def test_class_file_action_method_moved(file_action: FileActions):
     assert file_action.move is False
     assert file_action.was_moved is False
     
@@ -169,7 +171,7 @@ def test_class_file_action_method_moved(file_action):
     assert file_action.was_moved is True
 
 
-def test_class_file_action_method_to_hash(file_action):
+def test_class_file_action_method_to_hash(file_action: FileActions):
     assert file_action.hash is False
     assert file_action.was_hashed is False
     
@@ -179,7 +181,7 @@ def test_class_file_action_method_to_hash(file_action):
     assert file_action.was_hashed is False
 
 
-def test_class_file_action_method_hashed(file_action):
+def test_class_file_action_method_hashed(file_action: FileActions):
     assert file_action.hash is False
     assert file_action.was_hashed is False
     
@@ -189,7 +191,7 @@ def test_class_file_action_method_hashed(file_action):
     assert file_action.was_hashed is True
 
 
-def test_class_file_action_method_to_list(file_action):
+def test_class_file_action_method_to_list(file_action: FileActions):
     assert file_action.list is False
     assert file_action.was_listed is False
     
@@ -199,7 +201,7 @@ def test_class_file_action_method_to_list(file_action):
     assert file_action.was_listed is False
 
 
-def test_class_file_action_method_listed(file_action):
+def test_class_file_action_method_listed(file_action: FileActions):
     assert file_action.list is False
     assert file_action.was_listed is False
     
@@ -209,7 +211,7 @@ def test_class_file_action_method_listed(file_action):
     assert file_action.was_listed is True
 
 
-def test_class_file_action_method_to_preview(file_action):
+def test_class_file_action_method_to_preview(file_action: FileActions):
     assert file_action.preview is False
     assert file_action.was_previewed is False
     
@@ -219,7 +221,7 @@ def test_class_file_action_method_to_preview(file_action):
     assert file_action.was_previewed is False
 
 
-def test_class_file_action_method_previewed(file_action):
+def test_class_file_action_method_previewed(file_action: FileActions):
     assert file_action.preview is False
     assert file_action.was_previewed is False
     
@@ -229,7 +231,7 @@ def test_class_file_action_method_previewed(file_action):
     assert file_action.was_previewed is True
 
 
-def test_class_file_action_method_to_thumbnail(file_action):
+def test_class_file_action_method_to_thumbnail(file_action: FileActions):
     assert file_action.thumbnail is False
     assert file_action.was_thumbnailed is False
     
@@ -239,7 +241,7 @@ def test_class_file_action_method_to_thumbnail(file_action):
     assert file_action.was_thumbnailed is False
 
 
-def test_class_file_action_method_thumbnailed(file_action):
+def test_class_file_action_method_thumbnailed(file_action: FileActions):
     assert file_action.thumbnail is False
     assert file_action.was_thumbnailed is False
     
