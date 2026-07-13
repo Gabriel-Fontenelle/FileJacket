@@ -59,10 +59,10 @@
     "md5": [
       "3ef498cd16697831243083faab12e83e",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd.md5",
+        "path": "../3763816_76417.psd.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd.md5:rb",
+          "buffer": "../3763816_76417.psd.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -90,7 +90,7 @@
     }
   },
   "filename": "3763816_76417",
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_pipelines_override_keyword_arguments": [
     [
       {
@@ -112,7 +112,7 @@
   },
   "extension": "psd",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd:rb",
+    "buffer": "../3763816_76417.psd:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -214,5 +214,5 @@
       "pipeline_raises_exception": false
     }
   },
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd"
+  "_path": "../3763816_76417.psd"
 }

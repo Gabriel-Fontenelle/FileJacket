@@ -9,10 +9,10 @@
     "md5": [
       "61f80c4db3cce9026d3c7dad85eaf3d8",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar.md5",
+        "path": "../images.tar.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar.md5:rb",
+          "buffer": "../images.tar.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -70,7 +70,7 @@
   },
   "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializer",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar:rb",
+    "buffer": "../images.tar:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -172,7 +172,7 @@
           ]
         }
       },
-      "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+      "_save_to": "..",
       "_actions": {
         "__source__": "filejacket.file.action.FileActions",
         "values": {
@@ -254,7 +254,7 @@
         }
       },
       "mime_type": "image/jpeg",
-      "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/-375x562.jpg",
+      "_path": "../-375x562.jpg",
       "_naming": {
         "__source__": "filejacket.file.name.FileNaming",
         "values": {
@@ -298,7 +298,7 @@
       ]
     }
   },
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_actions": {
     "__source__": "filejacket.file.action.FileActions",
     "values": {
@@ -374,7 +374,7 @@
             "crc32": [
               "9824",
               {
-                "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg.crc32",
+                "path": "../aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg.crc32",
                 "class": "filejacket.File"
               },
               "filejacket.pipelines.hasher.CRC32Hasher"
@@ -529,7 +529,7 @@
                   ]
                 }
               },
-              "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+              "_save_to": "..",
               "_actions": {
                 "__source__": "filejacket.file.action.FileActions",
                 "values": {
@@ -611,7 +611,7 @@
                 }
               },
               "mime_type": "image/jpeg",
-              "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/-375x562.jpg",
+              "_path": "../-375x562.jpg",
               "_naming": {
                 "__source__": "filejacket.file.name.FileNaming",
                 "values": {
@@ -655,7 +655,7 @@
               ]
             }
           },
-          "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+          "_save_to": "..",
           "_actions": {
             "__source__": "filejacket.file.action.FileActions",
             "values": {
@@ -737,7 +737,7 @@
             }
           },
           "mime_type": "image/jpeg",
-          "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg",
+          "_path": "../aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg",
           "_naming": {
             "__source__": "filejacket.file.name.FileNaming",
             "values": {
@@ -784,7 +784,7 @@
     }
   },
   "mime_type": "application/x-tar",
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar",
+  "_path": "../images.tar",
   "_naming": {
     "__source__": "filejacket.file.name.FileNaming",
     "values": {

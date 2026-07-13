@@ -59,10 +59,10 @@
     "md5": [
       "61f80c4db3cce9026d3c7dad85eaf3d8",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar.md5",
+        "path": "../images.tar.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar.md5:rb",
+          "buffer": "../images.tar.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -90,7 +90,7 @@
     }
   },
   "filename": "images",
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_pipelines_override_keyword_arguments": [
     [
       {
@@ -112,7 +112,7 @@
   },
   "extension": "tar",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar:rb",
+    "buffer": "../images.tar:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -214,5 +214,5 @@
       "pipeline_raises_exception": false
     }
   },
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.tar"
+  "_path": "../images.tar"
 }

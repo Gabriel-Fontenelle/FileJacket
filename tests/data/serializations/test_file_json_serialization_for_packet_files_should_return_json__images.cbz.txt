@@ -59,10 +59,10 @@
     "md5": [
       "52d6f20ee0d851d411685ac63759c8a3",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.cbz.md5",
+        "path": "../images.cbz.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.cbz.md5:rb",
+          "buffer": "../images.cbz.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -90,7 +90,7 @@
     }
   },
   "filename": "images",
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_pipelines_override_keyword_arguments": [
     [
       {
@@ -112,7 +112,7 @@
   },
   "extension": "cbz",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.cbz:rb",
+    "buffer": "../images.cbz:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -214,5 +214,5 @@
       "pipeline_raises_exception": false
     }
   },
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.cbz"
+  "_path": "../images.cbz"
 }

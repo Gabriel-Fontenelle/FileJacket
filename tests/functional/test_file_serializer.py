@@ -35,7 +35,7 @@ def test_file_json_serialization_for_packet_files_should_return_json(filename: s
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_for_packet_files_should_return_json__{filename}.txt",
         mode="r"
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{PACKET_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.
@@ -73,7 +73,7 @@ def test_file_json_serialization_with_internal_content_for_packet_files_should_r
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_with_internal_"
         f"content_for_packet_files_should_return_json__{filename}.txt",
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{PACKET_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.
@@ -121,7 +121,7 @@ def test_file_json_serialization_with_internal_content_and_additional_extractors
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_with_internal_content_and_additional_extractors_"
         f"for_packet_files_should_return_json__{filename}.txt"
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{PACKET_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.
@@ -159,7 +159,7 @@ def test_file_json_serialization_with_thumbnail_for_packet_files_should_return_j
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_with_thumbnail_for_packet_files_should_return_json"
         f"__{filename}.txt"
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{PACKET_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.
@@ -196,7 +196,7 @@ def test_file_json_serialization_with_thumbnail_with_type_image_should_return_js
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_with_thumbnail_with_type_image_should_return_json"
         f"__{filename}.txt"
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{IMAGE_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.
@@ -230,7 +230,7 @@ def test_file_json_serialization_with_thumbnail_with_type_video_should_return_js
         f"{SERIALIZATION_DATA_DIR}/test_file_json_serialization_with_thumbnail_with_type_video_should_return_json"
         f"__{filename}.txt",
     ) as fp:
-        expected_serialization = fp.read()
+        expected_serialization = fp.read().replace("..", f"{VIDEO_DATA_DIR}")
 
     # Due to the order of keys in serialization being non-deterministic we need to convert
     # again to dict to compare the results.

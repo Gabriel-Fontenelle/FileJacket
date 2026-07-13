@@ -40,7 +40,7 @@
       "packed": false
     }
   },
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos/183136-870151786_small_by_setfwithanf_At_pixabay.mp4",
+  "_path": "../183136-870151786_small_by_setfwithanf_At_pixabay.mp4",
   "type": "video",
   "_pipelines_override_keyword_arguments": [
     [
@@ -51,7 +51,7 @@
     ]
   ],
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos/183136-870151786_small_by_setfwithanf_At_pixabay.mp4:rb",
+    "buffer": "../183136-870151786_small_by_setfwithanf_At_pixabay.mp4:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -78,10 +78,10 @@
     "md5": [
       "51537d052f1007cedc07f3547a579eea",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos/183136-870151786_small_by_setfwithanf_At_pixabay.mp4.md5",
+        "path": "../183136-870151786_small_by_setfwithanf_At_pixabay.mp4.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos/183136-870151786_small_by_setfwithanf_At_pixabay.mp4.md5:rb",
+          "buffer": "../183136-870151786_small_by_setfwithanf_At_pixabay.mp4.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -212,7 +212,7 @@
           "thumbnail": true
         }
       },
-      "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos/183136-870151786_small_by_setfwithanf_At_pixabay.mp4--375x562.jpg",
+      "_path": "../183136-870151786_small_by_setfwithanf_At_pixabay.mp4--375x562.jpg",
       "type": "image",
       "_pipelines_override_keyword_arguments": {},
       "_content": {
@@ -358,7 +358,7 @@
           "processing": false
         }
       },
-      "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos",
+      "_save_to": "..",
       "uri_handler": "filejacket.handler.URI"
     },
     "animated_file": null,
@@ -403,6 +403,6 @@
       "processing": false
     }
   },
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/videos",
+  "_save_to": "..",
   "uri_handler": "filejacket.handler.URI"
 }

@@ -50,10 +50,10 @@
     "md5": [
       "9223ab3030da711d6634ffe723a22c74",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.rar.md5",
+        "path": "../images.rar.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.rar.md5:rb",
+          "buffer": "../images.rar.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -155,7 +155,7 @@
             "crc32": [
               "2442100892",
               {
-                "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg.crc32",
+                "path": "../aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg.crc32",
                 "class": "filejacket.File"
               },
               "filejacket.pipelines.hasher.CRC32Hasher"
@@ -270,7 +270,7 @@
               ]
             ]
           },
-          "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+          "_save_to": "..",
           "_content": {
             "buffer": "internal:aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg:rb:filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
             "buffer_helper": "filejacket.file.content.BufferBytes:None",
@@ -279,7 +279,7 @@
             "_buffer_encoding": "utf-8",
             "cached": false
           },
-          "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg",
+          "_path": "../aurora-1197753_1280_by_Noel_Bauza_at_pixabay.jpg",
           "type": "image",
           "update_date": "d:2024-04-21T21:52:56.703508214+00:00",
           "_actions": {
@@ -358,7 +358,7 @@
             "crc32": [
               "788547186",
               {
-                "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/snow-man-10450_by_winterflower_at_pixabay.gif.crc32",
+                "path": "../snow-man-10450_by_winterflower_at_pixabay.gif.crc32",
                 "class": "filejacket.File"
               },
               "filejacket.pipelines.hasher.CRC32Hasher"
@@ -473,7 +473,7 @@
               ]
             ]
           },
-          "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+          "_save_to": "..",
           "_content": {
             "buffer": "internal:snow-man-10450_by_winterflower_at_pixabay.gif:rb:filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
             "buffer_helper": "filejacket.file.content.BufferBytes:None",
@@ -482,7 +482,7 @@
             "_buffer_encoding": "utf-8",
             "cached": false
           },
-          "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/snow-man-10450_by_winterflower_at_pixabay.gif",
+          "_path": "../snow-man-10450_by_winterflower_at_pixabay.gif",
           "type": "image",
           "update_date": "d:2024-04-21T22:00:28.547339110+00:00",
           "_actions": {
@@ -561,7 +561,7 @@
             "crc32": [
               "3529115945",
               {
-                "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/watermelon-8368960_by_ebengg_at_pixabay.svg.crc32",
+                "path": "../watermelon-8368960_by_ebengg_at_pixabay.svg.crc32",
                 "class": "filejacket.File"
               },
               "filejacket.pipelines.hasher.CRC32Hasher"
@@ -676,7 +676,7 @@
               ]
             ]
           },
-          "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+          "_save_to": "..",
           "_content": {
             "buffer": "internal:watermelon-8368960_by_ebengg_at_pixabay.svg:rb:filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
             "buffer_helper": "filejacket.file.content.BufferBytes:None",
@@ -685,7 +685,7 @@
             "_buffer_encoding": "utf-8",
             "cached": false
           },
-          "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/watermelon-8368960_by_ebengg_at_pixabay.svg",
+          "_path": "../watermelon-8368960_by_ebengg_at_pixabay.svg",
           "type": "image",
           "update_date": "d:2024-04-21T21:56:16.726516745+00:00",
           "_actions": {
@@ -792,16 +792,16 @@
       ]
     ]
   },
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.rar:rb",
+    "buffer": "../images.rar:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
     "_buffer_encoding": "utf-8",
     "cached": false
   },
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/images.rar",
+  "_path": "../images.rar",
   "type": "application",
   "update_date": "d:2025-04-26T23:46:29.469007",
   "_actions": {

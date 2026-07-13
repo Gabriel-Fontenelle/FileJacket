@@ -9,10 +9,10 @@
     "md5": [
       "3ef498cd16697831243083faab12e83e",
       {
-        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd.md5",
+        "path": "../3763816_76417.psd.md5",
         "class": "filejacket.File",
         "content": {
-          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd.md5:rb",
+          "buffer": "../3763816_76417.psd.md5:rb",
           "buffer_helper": "filejacket.file.content.BufferBytes:None",
           "cache_helper": "filejacket.file.content.NonCache",
           "_block_size": 102400,
@@ -70,7 +70,7 @@
   },
   "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializer",
   "_content": {
-    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd:rb",
+    "buffer": "../3763816_76417.psd:rb",
     "buffer_helper": "filejacket.file.content.BufferBytes:None",
     "cache_helper": "filejacket.file.content.NonCache",
     "_block_size": 102400,
@@ -172,7 +172,7 @@
           ]
         }
       },
-      "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+      "_save_to": "..",
       "_actions": {
         "__source__": "filejacket.file.action.FileActions",
         "values": {
@@ -254,7 +254,7 @@
         }
       },
       "mime_type": "image/jpeg",
-      "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd--375x562.jpg",
+      "_path": "../3763816_76417.psd--375x562.jpg",
       "_naming": {
         "__source__": "filejacket.file.name.FileNaming",
         "values": {
@@ -298,7 +298,7 @@
       ]
     }
   },
-  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "_save_to": "..",
   "_actions": {
     "__source__": "filejacket.file.action.FileActions",
     "values": {
@@ -389,7 +389,7 @@
     }
   },
   "mime_type": "image/vnd.adobe.photoshop",
-  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/3763816_76417.psd",
+  "_path": "../3763816_76417.psd",
   "_naming": {
     "__source__": "filejacket.file.name.FileNaming",
     "values": {
