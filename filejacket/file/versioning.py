@@ -37,10 +37,22 @@ class MigrateBaseFileToVersion2:
         """
         Method to migrate BaseFile version 1 to BaseFile version 2.
         In version 2 the _meta was changed to meta.
+        In version 1 there is a bug where thumbnail metadata is registered a
+        second time in extra_data.
         """
+        # Fix metadata attribute
         if "_meta" in data:
-            data["meta"] = data["_meta"]
+            data["meta"] = data["_meta"].copy()
             del data["_meta"]
+
+        # Fix thumbnail attribute being duplicated in extra_data
+        if (
+            "meta" in data
+            and "thumbnail" in data["meta"]
+            and "extra_data" in data["meta"]
+            and "thumbnail" in data["meta"]["extra_data"]
+        ):
+            del data["meta"]["extra_data"]["thumbnail"]
 
         return data
 
