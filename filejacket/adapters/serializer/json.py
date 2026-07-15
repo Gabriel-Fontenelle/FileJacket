@@ -46,8 +46,6 @@ class JSONSerializer(Serializer):
     """
     Class that allow handling of Serialization/Deserialization from object to JSON string and from it to object.
     This serializer currently don't support version.
-
-    TODO: Support __version__.
     """
 
     @classmethod
