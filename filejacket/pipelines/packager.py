@@ -422,7 +422,7 @@ class TarCompressedFilesFromPackageExtractor(BasePackager):
         """
         # We don't need to reset the buffer before calling it, because it will be reset
         # if already cached. The next time property buffer is called it will reset again.
-        with cls.compressor_class(file=file_object.content_as_buffer) as compressed_object:
+        with cls.compressor_class(fileobj=file_object.content_as_buffer) as compressed_object:
             for internal_file in compressed_object.getmembers():
                 # Skip directories
                 if internal_file.isdir():
