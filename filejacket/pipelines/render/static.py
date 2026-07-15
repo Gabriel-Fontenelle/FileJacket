@@ -334,7 +334,7 @@ class ImageRender(BaseStaticRender):
     Render class for processing information from file's content focusing in rendering the whole image.
     """
 
-    extensions: set[str] = {"jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp"}
+    extensions: set[str] = {"jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp", "avif", "apng"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """

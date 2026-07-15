@@ -111,7 +111,7 @@ class StaticAnimatedRender(BaseAnimatedRender):
     This class not make use of sequences.
     """
 
-    extensions: set[str] = {"jpeg", "jpg", "bmp", "tiff", "tif"}
+    extensions: set[str] = {"jpeg", "jpg", "bmp", "tiff", "tif", "png", "avif"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -120,7 +120,7 @@ class StaticAnimatedRender(BaseAnimatedRender):
     def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object.
-        But because those extensions don`t need to be animated to represent the whole image,
+        But because those extensions doesn't need to be animated to represent the whole image,
         there is no need to animate it.
         """
         image_engine: Type[ImageEngine] = kwargs.pop("image_engine")
@@ -357,6 +357,7 @@ class VideoAnimatedRender(BaseAnimatedRender):
         "3gp",
         "m4a",
         "m2ts",
+        "webm",
     }
     """
     Attribute to store allowed extensions for use in `validator`.
