@@ -140,6 +140,17 @@ class MimeTypeEngine:
             "guess_extension_and_mimetype() method must be overwritten on child class."
         )
 
+    def guess_partial_extension_from_filename(self, filename: str) -> tuple[str | None, str | None]:
+        """
+        Method to get the best extension for given filename in case there are more than one extension
+        available using as base the filename that can or not have a registered extension in it.
+        This method should be for filenames that have a possibility to be from a partial file.
+        This method should be override in child class.
+        """
+        raise NotImplementedError(
+            "guess_partial_extension_from_filename() method must be overwritten on child class."
+        )
+
     def is_extension_registered(self, extension: str) -> bool:
         """
         Method to check if a extension is registered or not in list of mimetypes and extensions.

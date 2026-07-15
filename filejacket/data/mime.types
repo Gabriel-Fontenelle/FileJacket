@@ -261,7 +261,11 @@ application/pkcs10				p10
 # application/pkcs12
 application/pkcs7-mime				p7c p7m
 application/pkcs7-signature				p7s
-application/pkcs8				p8
+application/pkcs8				p8 key
+application/pkcs10                  p10 csr
+application/pkix-cert               cer
+application/pkix-crl                crl
+application/pkcs7-mime              p7c
 application/pkix-attr-cert				ac
 application/pkix-cert				cer
 application/pkix-crl				crl
@@ -1347,6 +1351,13 @@ application/winhlp				hlp
 # application/wordperfect5.1
 application/wsdl+xml				wsdl
 application/wspolicy+xml				wspolicy
+application/x-x509-ca-cert          crt der
+application/x-x509-user-cert        crt
+application/x-pkcs7-crl             crl
+application/x-pem-file              pem
+application/x-pkcs12                p12 pfx
+application/x-pkcs7-certificates    p7b spc
+application/x-pkcs7-certreqresp     p7r
 application/x-7z-compressed				7z
 application/x-abiword				abw
 application/x-ace-compressed				ace
@@ -1454,6 +1465,7 @@ application/x-tex				tex
 application/x-tex-tfm				tfm
 application/x-texinfo				texi texinfo
 application/x-tgif				obj
+application/x-troff-man         mkv
 application/x-ustar				ustar
 application/x-wais-source				src
 # application/x-www-form-urlencoded
@@ -1745,7 +1757,8 @@ image/jpeg				jpe jpeg jpg
 image/ktx				ktx
 # image/naplps
 image/photoshop				psd
-image/png				png apng
+image/png				png
+image/apng              apng
 image/prs.btif				btif
 # image/prs.ptiraw
 # image/pwg-raster
@@ -1885,7 +1898,7 @@ text/calendar				ics ifb
 text/css				css
 text/csv				csv
 text/csv-schema				csv
-text/checksum               crc md5 sha256 sha512
+text/checksum               crc md5 sha256 sha512 xxh64 xxh128 crc32
 # text/directory
 # text/dns
 # text/ecmascript

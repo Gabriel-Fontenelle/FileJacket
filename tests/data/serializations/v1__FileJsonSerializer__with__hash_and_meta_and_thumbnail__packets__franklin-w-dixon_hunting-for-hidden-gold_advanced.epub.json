@@ -1,0 +1,438 @@
+{
+  "__source__": "filejacket.File",
+  "_thumbnail": {
+    "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
+    "animated_defaults": "filejacket.file.thumbnail.PreviewDefaults",
+    "static_file": {
+      "__source__": "filejacket.File",
+      "_thumbnail": {
+        "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
+        "animated_defaults": "filejacket.file.thumbnail.PreviewDefaults",
+        "static_file": null,
+        "animated_file": null,
+        "image_engine": "filejacket.adapters.image.WandImage",
+        "video_engine": "filejacket.adapters.video.MoviePyVideo",
+        "render_static_pipeline": {
+          "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+          "processor": "filejacket.engines.pipeline.Processor",
+          "processors_candidate": [
+            "filejacket.pipelines.render.static.DocumentFirstPageRender",
+            "filejacket.pipelines.render.static.ImageRender",
+            "filejacket.pipelines.render.static.PSDRender",
+            "filejacket.pipelines.render.static.VectorRender",
+            "filejacket.pipelines.render.static.VectorSWFRender",
+            "filejacket.pipelines.render.static.VideoRender"
+          ]
+        },
+        "render_animated_pipeline": {
+          "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+          "processor": "filejacket.engines.pipeline.Processor",
+          "processors_candidate": [
+            "filejacket.pipelines.render.animated.StaticAnimatedRender",
+            "filejacket.pipelines.render.animated.ImageAnimatedRender",
+            "filejacket.pipelines.render.animated.PSDAnimatedRender",
+            "filejacket.pipelines.render.animated.VideoAnimatedRender",
+            "filejacket.pipelines.render.animated.DocumentAnimatedRender"
+          ]
+        }
+      },
+      "_actions": {
+        "__source__": "filejacket.file.action.FileActions",
+        "values": {
+          "thumbnail": true,
+          "was_previewed": false,
+          "preview": true,
+          "list": false,
+          "was_moved": false,
+          "hash": true,
+          "extract": false,
+          "rename": false,
+          "was_listed": false,
+          "was_saved": false,
+          "move": false,
+          "save": true,
+          "was_extracted": false,
+          "was_thumbnailed": false,
+          "was_renamed": false,
+          "was_hashed": false
+        }
+      },
+      "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub--375x562.jpg",
+      "relative_path": "",
+      "hasher_pipeline": {
+        "pipeline": "filejacket.adapters.pipeline.PipelineContent",
+        "processor": "filejacket.adapters.pipeline.ProcessorContent",
+        "processors_candidate": [
+          [
+            "filejacket.pipelines.hasher.XXHASH128Hasher",
+            {
+              "full_check": true,
+              "full_loop_check": true
+            }
+          ],
+          [
+            "filejacket.pipelines.hasher.MD5Hasher",
+            {
+              "full_check": true,
+              "full_loop_check": true
+            }
+          ],
+          [
+            "filejacket.pipelines.hasher.SHA256Hasher",
+            {
+              "full_check": true,
+              "full_loop_check": true
+            }
+          ]
+        ]
+      },
+      "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+      "type": "image",
+      "_content_files": {
+        "internal_files": {},
+        "unpack_data_pipeline": {
+          "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+          "processor": "filejacket.engines.pipeline.Processor",
+          "processors_candidate": [
+            "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+            "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+            "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+            "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor"
+          ]
+        },
+        "length": 0
+      },
+      "_naming": {
+        "__source__": "filejacket.file.name.FileNaming",
+        "values": {
+          "history": [],
+          "on_conflict_rename": false,
+          "related_file_object": null,
+          "previous_saved_extension": null,
+          "filename": null,
+          "extension": null,
+          "filename_prefix": null,
+          "filename_sufix": null,
+          "directory_path": null,
+          "relative_path": null
+        }
+      },
+      "length": 0,
+      "_pipelines_override_keyword_arguments": {},
+      "filename": "franklin-w-dixon_hunting-for-hidden-gold_advanced.epub--375x562",
+      "_content": {
+        "buffer": ":",
+        "buffer_helper": "filejacket.file.content.BufferBytes:None",
+        "cache_helper": "filejacket.file.content.NonCache",
+        "_block_size": 102400,
+        "_buffer_encoding": "utf-8",
+        "cached": false,
+        "content_base64": "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"
+      },
+      "mime_type": "image/jpeg",
+      "_option": {
+        "__source__": "filejacket.file.option.FileOption",
+        "values": {
+          "allow_overwrite": false,
+          "allow_override": false,
+          "allow_search_hashes": true,
+          "allow_update": true,
+          "allow_rename": true,
+          "allow_extension_change": true,
+          "create_backup": true,
+          "save_hashes": true,
+          "save_description": false,
+          "save_thumbnails": false,
+          "save_info": false,
+          "save_desktop_shortcut": false,
+          "pipeline_raises_exception": false
+        }
+      },
+      "meta": {
+        "__source__": "filejacket.file.meta.FileMetadata",
+        "values": {
+          "packed": false,
+          "lossless": false,
+          "hashable": true,
+          "extra_data": null,
+          "compressed": false,
+          "thumbnail": true
+        }
+      },
+      "rename_pipeline": {
+        "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+        "processor": "filejacket.engines.pipeline.Processor",
+        "processors_candidate": [
+          "filejacket.pipelines.renamer.WindowsRenamer"
+        ]
+      },
+      "extension": "jpg",
+      "__version__": "1",
+      "uri_handler": "filejacket.handler.URI",
+      "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
+      "storage": "filejacket.adapters.storage.LinuxFileSystem",
+      "_state": {
+        "__source__": "filejacket.file.state.FileState",
+        "values": {
+          "adding": true,
+          "processing": false,
+          "renaming": false,
+          "changing": false,
+          "moving": false
+        }
+      },
+      "extract_data_pipeline": {
+        "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+        "processor": "filejacket.engines.pipeline.Processor",
+        "processors_candidate": [
+          "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+          "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor"
+        ]
+      },
+      "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializer",
+      "compare_pipeline": {
+        "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+        "processor": "filejacket.engines.pipeline.Processor",
+        "processors_candidate": [
+          "filejacket.pipelines.comparer.TypeCompare",
+          "filejacket.pipelines.comparer.SizeCompare",
+          "filejacket.pipelines.comparer.BinaryCompare",
+          "filejacket.pipelines.comparer.HashCompare",
+          "filejacket.pipelines.comparer.DataCompare"
+        ]
+      },
+      "hashes": {}
+    },
+    "animated_file": null,
+    "image_engine": "filejacket.adapters.image.WandImage",
+    "video_engine": "filejacket.adapters.video.MoviePyVideo",
+    "render_static_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.static.DocumentFirstPageRender",
+        "filejacket.pipelines.render.static.ImageRender",
+        "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
+        "filejacket.pipelines.render.static.VideoRender"
+      ]
+    },
+    "render_animated_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.animated.StaticAnimatedRender",
+        "filejacket.pipelines.render.animated.ImageAnimatedRender",
+        "filejacket.pipelines.render.animated.PSDAnimatedRender",
+        "filejacket.pipelines.render.animated.VideoAnimatedRender",
+        "filejacket.pipelines.render.animated.DocumentAnimatedRender"
+      ]
+    }
+  },
+  "update_date": "d:2025-04-26T23:46:29.465007",
+  "_actions": {
+    "__source__": "filejacket.file.action.FileActions",
+    "values": {
+      "thumbnail": false,
+      "was_previewed": false,
+      "preview": true,
+      "list": false,
+      "was_moved": false,
+      "hash": false,
+      "extract": false,
+      "rename": false,
+      "was_listed": true,
+      "was_saved": true,
+      "move": false,
+      "save": false,
+      "was_extracted": false,
+      "was_thumbnailed": true,
+      "was_renamed": false,
+      "was_hashed": true
+    }
+  },
+  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub",
+  "relative_path": "",
+  "hasher_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineContent",
+    "processor": "filejacket.adapters.pipeline.ProcessorContent",
+    "processors_candidate": [
+      [
+        "filejacket.pipelines.hasher.XXHASH128Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.MD5Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.SHA256Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ]
+    ]
+  },
+  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets",
+  "type": "application",
+  "_content_files": {
+    "internal_files": {},
+    "unpack_data_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor"
+      ]
+    },
+    "length": 0
+  },
+  "_naming": {
+    "__source__": "filejacket.file.name.FileNaming",
+    "values": {
+      "history": [],
+      "on_conflict_rename": false,
+      "related_file_object": "1",
+      "previous_saved_extension": null,
+      "filename": null,
+      "extension": null,
+      "filename_prefix": null,
+      "filename_sufix": null,
+      "directory_path": null,
+      "relative_path": null
+    }
+  },
+  "length": 984758,
+  "create_date": "d:2025-04-26T23:46:29.465007",
+  "_pipelines_override_keyword_arguments": [
+    [
+      {
+        "full_loop_check": true
+      },
+      "hasher_pipeline"
+    ]
+  ],
+  "filename": "franklin-w-dixon_hunting-for-hidden-gold_advanced",
+  "_content": {
+    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub:rb",
+    "buffer_helper": "filejacket.file.content.BufferBytes:None",
+    "cache_helper": "filejacket.file.content.NonCache",
+    "_block_size": 102400,
+    "_buffer_encoding": "utf-8",
+    "cached": false
+  },
+  "mime_type": "application/epub+zip",
+  "_option": {
+    "__source__": "filejacket.file.option.FileOption",
+    "values": {
+      "allow_overwrite": false,
+      "allow_override": false,
+      "allow_search_hashes": true,
+      "allow_update": true,
+      "allow_rename": true,
+      "allow_extension_change": true,
+      "create_backup": true,
+      "save_hashes": true,
+      "save_description": false,
+      "save_thumbnails": false,
+      "save_info": false,
+      "save_desktop_shortcut": false,
+      "pipeline_raises_exception": false
+    }
+  },
+  "meta": {
+    "__source__": "filejacket.file.meta.FileMetadata",
+    "values": {
+      "packed": true,
+      "lossless": false,
+      "hashable": true,
+      "extra_data": {
+        "test_additionak_info": true,
+        "test_additionak_info_2": "Test",
+        "test_additionak_info_3": 1
+      },
+      "compressed": false
+    }
+  },
+  "rename_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.renamer.WindowsRenamer"
+    ]
+  },
+  "extension": "epub",
+  "__version__": "1",
+  "uri_handler": "filejacket.handler.URI",
+  "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
+  "storage": "filejacket.adapters.storage.LinuxFileSystem",
+  "_state": {
+    "__source__": "filejacket.file.state.FileState",
+    "values": {
+      "adding": false,
+      "processing": false,
+      "renaming": false,
+      "changing": false,
+      "moving": false
+    }
+  },
+  "extract_data_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineOrderedDependency",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+      "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+      "filejacket.pipelines.extractor.FileSystemDataExtractor",
+      "filejacket.pipelines.extractor.HashFileExtractor"
+    ]
+  },
+  "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializer",
+  "compare_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.comparer.TypeCompare",
+      "filejacket.pipelines.comparer.SizeCompare",
+      "filejacket.pipelines.comparer.BinaryCompare",
+      "filejacket.pipelines.comparer.HashCompare",
+      "filejacket.pipelines.comparer.DataCompare"
+    ]
+  },
+  "id": "1",
+  "hashes": {
+    "xxh128": [
+      "f0a2f2d2a0db7eadc587d6fffa8f23fd",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub.xxh128",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.XXHASH128Hasher"
+    ],
+    "md5": [
+      "902d0fcc1345beff238038039a4f88f7",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub.md5",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.MD5Hasher"
+    ],
+    "sha256": [
+      "f18871267500f5582aeb7b96082b1d5d5bae075267ff5bef65bd16608783ca3b",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/packets/franklin-w-dixon_hunting-for-hidden-gold_advanced.epub.sha256",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.SHA256Hasher"
+    ]
+  }
+}

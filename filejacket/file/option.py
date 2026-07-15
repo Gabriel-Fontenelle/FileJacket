@@ -69,6 +69,23 @@ class FileOption:
     """
     Variable to change the behavior of save method to allow saving the generated hash files.
     """
+    save_description: bool = False
+    """
+    Variable to change the behavior of save method to allow saving the description in its own file.
+    """
+    save_thumbnails: bool = False
+    """
+    Variable to change the behavior of save method to allow saving the thumbnails (thumbnail and preview) in its own 
+    file.
+    """
+    save_info: bool = False
+    """
+    Variable to change the behavior of save method to allow saving metadata in its own as info.json.
+    """
+    save_desktop_shortcut: bool = False
+    """
+    Variable to change the behavior of save method to allow saving the desktop shortcut in its own file.
+    """
 
     # Options related to running a pipeline
     pipeline_raises_exception = False
@@ -95,7 +112,7 @@ class FileOption:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {
+        attributes: tuple = (
             "allow_overwrite",
             "allow_override",
             "allow_search_hashes",
@@ -104,7 +121,11 @@ class FileOption:
             "allow_extension_change",
             "create_backup",
             "save_hashes",
+            "save_description",
+            "save_thumbnails",
+            "save_info",
+            "save_desktop_shortcut",
             "pipeline_raises_exception",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}

@@ -26,7 +26,7 @@ from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
 from ..base import BaseRender
-from .. import Pipeline
+from ...adapters.pipeline import PipelineOrderedDependency
 from ...exception import RenderError
 
 if TYPE_CHECKING:
@@ -59,11 +59,34 @@ class BaseAnimatedRender(BaseRender):
         """
         defaults: Type[PreviewDefaults] = object_to_process._thumbnail.animated_defaults
 
+        default_filename = (
+            f"-{defaults.filename}-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+            if defaults.filename else
+            f"-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+        )
+        save_to = object_to_process.save_to
+        if object_to_process.meta.internal:
+            path = object_to_process.storage.join(
+                object_to_process.save_to, f"{object_to_process.relative_path}{default_filename}"
+            )
+            relative_path = object_to_process.storage.get_directory_from_path(object_to_process.relative_path)
+        else:
+            path = f"{object_to_process.sanitize_path}-{default_filename}"
+            relative_path = object_to_process.storage.get_directory_from_path(
+                object_to_process.sanitize_path
+            ).replace(save_to, "")
+
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
-        animated_file: BaseFile = object_to_process.__class__(
-            path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
-            extract_data_pipeline=Pipeline(
+        file_class = object_to_process.__class__
+        # passthrough options available in class for BaseFile,
+        # to allow customization to also be available in new file.
+        file_class._option = object_to_process._option
+        animated_file: BaseFile = file_class(
+            path=path,
+            save_to=save_to,
+            relative_path=relative_path,
+            extract_data_pipeline=PipelineOrderedDependency(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             ),
@@ -88,7 +111,7 @@ class StaticAnimatedRender(BaseAnimatedRender):
     This class not make use of sequences.
     """
 
-    extensions: set[str] = {"jpeg", "jpg", "bmp", "tiff", "tif"}
+    extensions: set[str] = {"jpeg", "jpg", "bmp", "tiff", "tif", "png", "avif"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -97,7 +120,7 @@ class StaticAnimatedRender(BaseAnimatedRender):
     def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object.
-        But because those extensions don`t need to be animated to represent the whole image,
+        But because those extensions doesn't need to be animated to represent the whole image,
         there is no need to animate it.
         """
         image_engine: Type[ImageEngine] = kwargs.pop("image_engine")
@@ -334,6 +357,7 @@ class VideoAnimatedRender(BaseAnimatedRender):
         "3gp",
         "m4a",
         "m2ts",
+        "webm",
     }
     """
     Attribute to store allowed extensions for use in `validator`.
@@ -360,11 +384,11 @@ class VideoAnimatedRender(BaseAnimatedRender):
 
         total_frames: int = video.get_frame_amount()
 
-        steps: int = total_frames // int(total_frames / 100 * defaults.duration)
+        steps: int = total_frames // int(total_frames / 500 * defaults.duration)
 
         images: list[ImageEngine] = []
 
-        for index in set(range(0, total_frames, steps)):
+        for index in range(0, total_frames, steps):
             image: ImageEngine = image_engine(
                 buffer=BytesIO(
                     video.get_frame_as_bytes(index=index, encode_format=defaults.format)

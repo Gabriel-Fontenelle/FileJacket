@@ -26,7 +26,6 @@ from __future__ import annotations
 import re
 from collections import namedtuple
 from typing import Type, TYPE_CHECKING, NamedTuple, Pattern
-
 # third-party
 from urllib.parse import urlparse, parse_qsl, unquote, urlencode
 

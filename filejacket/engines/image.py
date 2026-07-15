@@ -28,7 +28,7 @@ from io import BytesIO, StringIO
 from typing import Any, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..pipelines.extractor.package import PackageExtractor
+    from ..pipelines.base import  BasePackager
 
 __all__ = [
     "ImageEngine",
@@ -57,7 +57,7 @@ class ImageEngine:
     """
 
     def __init__(
-        self, buffer: StringIO | BytesIO | PackageExtractor.ContentBuffer | None = None
+        self, buffer: StringIO | BytesIO | BasePackager.ContentBuffer | None = None
     ) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source
@@ -161,7 +161,26 @@ class ImageEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError(
-            "The method get_bytes_from_image should be override in child class."
+            "The method get_bytes should be override in child class."
+        )
+
+    def get_bytes_uncompressed(self) -> bytes:
+        """
+        Method to obtain the bytes' representation for the content of the current image object
+        in uncompressed format.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_bytes_uncompressed should be override in child class."
+        )
+
+    def get_keypoints_and_descriptors(self, feature_matcher = "orb") -> tuple:
+        """
+        Method to obtain the tuple of keypoint and descriptor that an image can have.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_keypoints_and_descriptors should be override in child class."
         )
 
     def get_relative_size(
@@ -191,6 +210,15 @@ class ImageEngine:
 
         return int(ratio[0] * a * size), int(b * ratio[1] * size)
 
+    def get_sequence_images(self) -> list:
+        """
+        Method to obtain the images in a sequence.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError(
+            "The method get_size should be override in child class."
+        )
+
     def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
@@ -200,6 +228,13 @@ class ImageEngine:
         raise NotImplementedError(
             "The method get_size should be override in child class."
         )
+
+    def get_mode(self) -> str:
+        """
+        Method to obtain the mode of current image, as RGB, RGBA, L, G, etc.
+        This method should be overwritten in child class.
+        """
+        return self.image.mode
 
     def has_sequence(self) -> bool:
         """

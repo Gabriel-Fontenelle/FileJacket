@@ -1,0 +1,239 @@
+{
+  "__source__": "filejacket.File",
+  "_state": {
+    "__source__": "filejacket.file.state.FileState",
+    "values": {
+      "moving": false,
+      "adding": false,
+      "processing": false,
+      "renaming": false,
+      "changing": false
+    }
+  },
+  "update_date": "d:2026-07-06T20:55:28.865973",
+  "extract_data_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineOrderedDependency",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+      "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+      "filejacket.pipelines.extractor.FileSystemDataExtractor",
+      "filejacket.pipelines.extractor.HashFileExtractor"
+    ]
+  },
+  "length": 43,
+  "compare_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.comparer.TypeCompare",
+      "filejacket.pipelines.comparer.SizeCompare",
+      "filejacket.pipelines.comparer.BinaryCompare",
+      "filejacket.pipelines.comparer.HashCompare",
+      "filejacket.pipelines.comparer.DataCompare"
+    ]
+  },
+  "rename_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.renamer.WindowsRenamer"
+    ]
+  },
+  "_option": {
+    "__source__": "filejacket.file.option.FileOption",
+    "values": {
+      "allow_overwrite": false,
+      "allow_override": false,
+      "allow_search_hashes": true,
+      "allow_update": true,
+      "allow_rename": true,
+      "allow_extension_change": true,
+      "create_backup": true,
+      "save_hashes": true,
+      "save_description": false,
+      "save_thumbnails": false,
+      "save_info": false,
+      "save_desktop_shortcut": false,
+      "pipeline_raises_exception": false
+    }
+  },
+  "_content": {
+    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts/content_for_test.txt:rb",
+    "buffer_helper": "filejacket.file.content.BufferBytes:None",
+    "cache_helper": "filejacket.file.content.NonCache",
+    "_block_size": 102400,
+    "_buffer_encoding": "utf-8",
+    "cached": false
+  },
+  "storage": "filejacket.adapters.storage.LinuxFileSystem",
+  "_pipelines_override_keyword_arguments": [
+    [
+      {
+        "full_loop_check": true
+      },
+      "hasher_pipeline"
+    ]
+  ],
+  "hasher_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineContent",
+    "processor": "filejacket.adapters.pipeline.ProcessorContent",
+    "processors_candidate": [
+      [
+        "filejacket.pipelines.hasher.XXHASH128Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.MD5Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.SHA256Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ]
+    ]
+  },
+  "create_date": "d:2026-07-06T20:55:28.865973",
+  "uri_handler": "filejacket.handler.URI",
+  "__version__": "1",
+  "id": "1",
+  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts/content_for_test.txt",
+  "_content_files": {
+    "length": 0,
+    "unpack_data_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor"
+      ]
+    },
+    "internal_files": {}
+  },
+  "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializerReadonly",
+  "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
+  "extension": "txt",
+  "_naming": {
+    "__source__": "filejacket.file.name.FileNaming",
+    "values": {
+      "history": [],
+      "on_conflict_rename": false,
+      "related_file_object": "1",
+      "previous_saved_extension": null,
+      "filename": null,
+      "extension": null,
+      "filename_prefix": null,
+      "filename_sufix": null,
+      "directory_path": null,
+      "relative_path": null
+    }
+  },
+  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts",
+  "filename": "content_for_test",
+  "_actions": {
+    "__source__": "filejacket.file.action.FileActions",
+    "values": {
+      "was_thumbnailed": true,
+      "rename": false,
+      "extract": false,
+      "was_renamed": false,
+      "was_moved": false,
+      "list": false,
+      "move": false,
+      "hash": false,
+      "was_extracted": false,
+      "thumbnail": false,
+      "preview": true,
+      "was_listed": false,
+      "save": false,
+      "was_saved": true,
+      "was_hashed": true,
+      "was_previewed": false
+    }
+  },
+  "relative_path": "",
+  "meta": {
+    "__source__": "filejacket.file.meta.FileMetadata",
+    "values": {
+      "hashable": true,
+      "lossless": false,
+      "packed": false,
+      "extra_data": {
+        "test_additionak_info": true,
+        "test_additionak_info_2": "Test",
+        "test_additionak_info_3": 1
+      },
+      "compressed": false
+    }
+  },
+  "_thumbnail": {
+    "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
+    "animated_defaults": "filejacket.file.thumbnail.PreviewDefaults",
+    "static_file": null,
+    "animated_file": null,
+    "image_engine": "filejacket.adapters.image.WandImage",
+    "video_engine": "filejacket.adapters.video.MoviePyVideo",
+    "render_static_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.static.DocumentFirstPageRender",
+        "filejacket.pipelines.render.static.ImageRender",
+        "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
+        "filejacket.pipelines.render.static.VideoRender"
+      ]
+    },
+    "render_animated_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.animated.StaticAnimatedRender",
+        "filejacket.pipelines.render.animated.ImageAnimatedRender",
+        "filejacket.pipelines.render.animated.PSDAnimatedRender",
+        "filejacket.pipelines.render.animated.VideoAnimatedRender",
+        "filejacket.pipelines.render.animated.DocumentAnimatedRender"
+      ]
+    }
+  },
+  "hashes": {
+    "xxh128": [
+      "ad32c92a7ac53908d139365fcb1701bd",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts/content_for_test.txt.xxh128",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.XXHASH128Hasher"
+    ],
+    "md5": [
+      "bdb65d299598a0848e527b59c322ceec",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts/content_for_test.txt.md5",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.MD5Hasher"
+    ],
+    "sha256": [
+      "7d7fc3ec5208f27664aecdc8e3e505955552fd0bc40d7c36d3cb2653095bec94",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/texts/content_for_test.txt.sha256",
+        "class": "filejacket.File"
+      },
+      "filejacket.pipelines.hasher.SHA256Hasher"
+    ]
+  },
+  "mime_type": "text/plain",
+  "type": "text"
+}

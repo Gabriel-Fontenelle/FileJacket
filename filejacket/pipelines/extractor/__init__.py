@@ -1,6 +1,7 @@
 from .content import (
     AudioMetadataFromContentExtractor,
     DocumentMetadataFromContentExtractor,
+    ImageMetadataFromContentExtractor,
     MimeTypeFromContentExtractor,
     VideoMetadataFromContentExtractor,
 )
@@ -14,17 +15,9 @@ from .external_data import (
     FilenameFromURLExtractor,
     PathFromURLExtractor,
 )
-from .package import (
-    PackageExtractor,
-    SevenZipCompressedFilesFromPackageExtractor,
-    RarCompressedFilesFromPackageExtractor,
-    ZipCompressedFilesFromPackageExtractor,
-    TarCompressedFilesFromPackageExtractor,
-)
+
 
 __all__ = [
-    # Parent classes
-    "PackageExtractor",
     # Parsing from storage
     "FileSystemDataExtractor",
     "FilenameAndExtensionFromPathExtractor",
@@ -39,11 +32,7 @@ __all__ = [
     # Parsing from Content
     "AudioMetadataFromContentExtractor",
     "DocumentMetadataFromContentExtractor",
+    "ImageMetadataFromContentExtractor",
     "MimeTypeFromContentExtractor",
     "VideoMetadataFromContentExtractor",
-    # Parsing from Package
-    "SevenZipCompressedFilesFromPackageExtractor",
-    "RarCompressedFilesFromPackageExtractor",
-    "TarCompressedFilesFromPackageExtractor",
-    "ZipCompressedFilesFromPackageExtractor",
 ]

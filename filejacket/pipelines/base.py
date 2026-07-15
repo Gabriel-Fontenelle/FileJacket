@@ -24,20 +24,18 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import logging
+from io import BytesIO, StringIO, IOBase
 from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence, Pattern
-from io import BytesIO, StringIO
-
-# core modules
-from . import Pipeline
 
 # modules
+from ..adapters.pipeline import PipelineOrderedDependency, PipelineSequential
 from ..engines.storage import StorageEngine
 from ..exception import (
     ImproperlyConfiguredFile,
     MultipleFileExistError,
     ValidationError,
+    StopPipeline,
 )
-
 
 if TYPE_CHECKING:
     from ..file import BaseFile
@@ -48,6 +46,7 @@ __all__ = [
     "BaseExtractor",
     "BaseHasher",
     "BaseRenamer",
+    "BaseRender"
 ]
 
 
@@ -56,17 +55,21 @@ class BaseComparer:
     Base class to be inherent to define classes for use on Comparer pipeline.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
-
     @classmethod
     def is_the_same(cls, file_1: BaseFile, file_2: BaseFile) -> None | bool:
         """
         Method used to check if two files are the same in memory using the File object.
-        This method must be overwrite on child class to work correctly.
+        This method must be overwritten on child class to work correctly.
+
+        The StopPipeline exception should be used in this method to stop the pipeline when the desirable
+        result is reached.
         """
+        raise NotImplementedError(
+            "The method is_the_same needs to be overwrite on child class."
+        )
+
+    @classmethod
+    def lower_or_greater(cls, file_1: BaseFile, file_2: BaseFile) -> None | int:
         raise NotImplementedError(
             "The method is_the_same needs to be overwrite on child class."
         )
@@ -161,8 +164,34 @@ class BaseHasher:
     Cache of digested hashes for given objects filename.
     """
 
+    def __init__(self, **kwargs):
+        """
+        Method to use the class as an object for Pipeline that uses iterator for `content` instead of whole
+        `object_to_process`.
+
+        It will try to load from file if it already exists.
+        Kwargs available:
+            - object_to_process
+            - try_loading_from_file
+            - full_check
+            - full_loop_check
+        """
+        self.hash_instance = self.__class__.instantiate_hash()
+        self.hash_loaded_from_file = False
+
+        object_to_process: BaseFile = kwargs["object_to_process"]
+        try_loading_from_file: bool = kwargs.get("try_loading_from_file", False)
+
+        if try_loading_from_file:
+            # Check if there is already a hash previously loaded on file,
+            # so that we don't try to digest it again.
+            if self.__class__.hasher_name not in object_to_process.hashes:
+                # Check if hash loaded from file and if so exit with success.
+                if self.__class__.process_from_file(**kwargs):
+                    self.hash_loaded_from_file = True
+
     @classmethod
-    def check_hash(cls, **kwargs: Any) -> bool | None:
+    def check_hash(cls, **kwargs: Any) -> tuple[bool | None, str | None]:
         """
         Method to verify integrity of file checking if hash save in file object is the same
         that is generated from file content. File content can be from File System, Memory or Stream
@@ -177,21 +206,21 @@ class BaseHasher:
         hash_instance: Any = cls.instantiate_hash()
 
         content_iterator: Iterator[
-            Sequence[object]
+            Sequence[bytes | str]
         ] | None = object_to_process.content_as_iterator
 
         if content_iterator is None:
-            return None
+            return None, None
 
         cls.generate_hash(
             hash_instance=hash_instance,
             content_iterator=content_iterator,
             encoding=object_to_process._content.buffer_helper.encoding,
         )
-        digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
+        # Change to lower case to make comparing of hashes case-insensitive.
+        digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance).lower()
 
-        # Change to lower case to make comparing of hashes case insensitive.
-        return digested_hex_value.lower() == hex_value.lower()
+        return digested_hex_value == hex_value.lower(), digested_hex_value
 
     @classmethod
     def digest_hash(cls, hash_instance: Any) -> str:
@@ -287,7 +316,7 @@ class BaseHasher:
         hash_file: BaseFile = object_to_process.__class__(
             path=f"{cls.file_system_handler.sanitize_path(object_to_process.save_to)}"
             f"{cls.file_system_handler.sep}{object_to_process.complete_filename}.{cls.hasher_name}",
-            extract_data_pipeline=Pipeline(
+            extract_data_pipeline=PipelineOrderedDependency(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             ),
@@ -495,11 +524,11 @@ class BaseHasher:
         The processor for hasher uses only one object that must be settled through first argument
         or through key work `object`.
 
-        FUTURE CONSIDERATION: Making the pipeline multi thread or multi process will require that iterator of content
-        be a isolated copy of content to avoid race condition when using content where its provenience came from file
+        FUTURE CONSIDERATION: Making the pipeline multi thread or multiprocess will require that iterator of content
+        be an isolated copy of content to avoid race condition when using content where its provenience came from file
         pointer.
 
-        This processors return boolean to indicate that process was ran successfully.
+        These processors return boolean to indicate that process was ran successfully.
         """
         object_to_process: BaseFile = kwargs["object_to_process"]
         try_loading_from_file: bool = kwargs.get("try_loading_from_file", False)
@@ -563,12 +592,12 @@ class BaseHasher:
         full_check: bool = kwargs.pop("full_check", True)
         full_loop_check: bool = kwargs.pop("full_loop_check", False)
 
-        # Save current file system filejacket
+        # Save current file system file
         class_file_system_handler: Type[StorageEngine] = cls.file_system_handler
 
         cls.file_system_handler = object_to_process.storage
 
-        # Don't proceed if no path was setted.
+        # Don't proceed if no path was set.
         if not object_to_process.path:
             return False
 
@@ -594,7 +623,7 @@ class BaseHasher:
         # Add hash to file. The content will be obtained from file pointer.
         hash_file: BaseFile = object_to_process.__class__(
             path=hash_file_path,
-            extract_data_pipeline=Pipeline(
+            extract_data_pipeline=PipelineOrderedDependency(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
                 "filejacket.pipelines.extractor.FileSystemDataExtractor",
@@ -613,10 +642,385 @@ class BaseHasher:
         hash_file._state.adding = False
         hash_file._actions.saved()
 
-        # Set-up the hex value and hash_file to hash content.
+        # Set up the hex value and hash_file to hash content.
         object_to_process.hashes[cls.hasher_name] = hex_value, hash_file, cls
 
         return True
+
+    def process_block(self, block: bytes | str | None, encoding: str = 'utf-8', **kwargs: dict[str, Any]) -> None:
+        """
+        Method for processing the content from an instance of BaseHasher instead of class.
+        This method should be used with pipeline for content.
+        """
+        if not self.hash_loaded_from_file:
+            self.__class__.update_hash(self.hash_instance, block, encoding)
+
+    def finish_process(self, object_to_process: BaseFile, **kwargs: dict[str, Any]) -> bool:
+        """
+        Method for finish the processing of content from an instance of BaseHasher instead of class.
+        This method should be used with pipeline for content.
+        """
+        if not self.hash_loaded_from_file:
+            # Digest hash
+            digested_hex_value: str = self.__class__.digest_hex_hash(hash_instance=self.hash_instance)
+
+            # Add hash to file
+            hash_file: BaseFile = self.__class__.create_hash_file(
+                object_to_process, digested_hex_value
+            )
+
+            object_to_process.hashes[self.__class__.hasher_name] = (
+                digested_hex_value,
+                hash_file,
+                self.__class__,
+            )
+
+        return True
+
+
+class BasePackager:
+    """
+    Extractor class with focus to processing information from file's content.
+    This class was created to allow parsing and extraction of data designated to
+    internal files.
+    """
+
+    extensions: set[str]
+    extensions = None
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    This attribute should be override in children classes.
+    """
+    compressor_class: Type[type]
+    compressor_class = None
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
+    This attribute should be override in children classes.
+    """
+
+    class ContentBuffer(IOBase):
+        """
+        Class to allow consumption of buffer in a lazy way.
+        This class should be override in children of BasePackager to
+        implementation of method read().
+        """
+
+        source_file_object: BaseFile
+        source_file_object = None
+        """
+        Attribute to store the related file object that has the buffer for the compressed content.
+        """
+        compressor: Type[type]
+        compressor = None
+        """
+        Attribute to store the class of the compressor able to uncompress the content.  
+        """
+        compressed_object: Any
+        compressed_object = None
+        """
+        Attribute to store the instance of the compressor.
+        """
+        filename: str
+        filename = None
+        """
+        Attribute to store the name of file that should be extract for this content.
+        """
+        mode: str
+        mode = None
+        """
+        Attribute to store the mode of read for the uncompressed content. 
+        """
+
+        reference_class: Type[BasePackager]
+        reference_class = None
+        """
+        Attribute to allow serialization of this  class as local class.
+        """
+
+        buffer: Any
+        """
+        Attribute to store the current initialized buffer.
+        """
+
+        def __init__(
+                self: BasePackager.ContentBuffer,
+                source_file_object: BaseFile,
+                compressor_class: Type[type],
+                internal_file_filename: str,
+                mode: str,
+                reference: Type[BasePackager],
+        ) -> None:
+            """
+            Method to initiate the object saving the data required to allow decompressing and reading content
+            for specific file.
+            """
+            self.source_file_object = source_file_object
+            self.compressor = compressor_class
+            self.filename = internal_file_filename
+            self.mode = mode
+            self.reference = reference
+
+        def read(
+                self: BasePackager.ContentBuffer, *args: Any, **kwargs: Any
+        ) -> str | bytes:
+            """
+            Method to read the content of the object initiating the buffer if not exists.
+            """
+            if not hasattr(self, "buffer"):
+                # Instantiate the buffer of inner content
+                self.mount_buffer()
+
+            return self.buffer.read(*args, **kwargs)
+
+        def mount_buffer(self: BasePackager.ContentBuffer) -> None:
+            """
+            Method to initiate the buffer object if not exists.
+            This method should be overwritten in child class.
+            """
+            raise NotImplementedError(
+                f"Method mount_buffer of BasePackager.ContentBuffer should be override in child class "
+                f"{self.__class__.__name__}."
+            )
+
+        def seek(self, *args: Any, **kwargs: Any) -> int:
+            """
+            Method to seek the content in the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                # Initiate the buffer
+                # It will begin extraction of file to have access to its buffer.
+                self.mount_buffer()
+
+            return self.buffer.seek(*args, **kwargs)
+
+        def seekable(self) -> bool:
+            """
+            Method to verify if buffer is seekable.
+            Buffer must exist for this method to work, else no action will be taken.
+
+            For better performance this method should be override in child class to avoid using buffer, as it extract the content
+            in memory.
+            """
+            if not hasattr(self, "buffer"):
+                # Initiate the buffer
+                # It will begin extraction of file to have access to its buffer.
+                self.mount_buffer()
+
+            return self.buffer.seekable()
+
+        def close(self) -> None:
+            """
+            Method to close the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                return
+
+            self.buffer.close()
+            delattr(self, "buffer")
+
+    @classmethod
+    def content_buffer(
+            cls, file_object: BaseFile, internal_file_name: str, mode: str = "rb"
+    ) -> ContentBuffer:
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        This method must be override in child class.
+        """
+        raise NotImplementedError(
+            "Method content_buffer must be overwritten on child class."
+        )
+
+    @classmethod
+    def decompress(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> bool:
+        """
+        Method to uncompress the content from a file_object.
+        This method must be override in child class.
+        """
+        raise NotImplementedError(
+            "Method extract_content must be overwritten on child class."
+        )
+
+    @classmethod
+    def extract(
+        cls, file_object: BaseFile, overrider: bool, **kwargs: Any
+    ) -> bool:
+        """
+        Method to extract the information necessary from a file_object.
+        This method must be override in child class.
+        """
+        raise NotImplementedError("Method extract must be overwritten on child class.")
+
+    @classmethod
+    def extract_as_generator(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> Iterator[BaseFile]:
+        """
+        Method to extract the information necessary from a file_object interactable.
+        """
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        for filename, internal_file_object in cls.iterate_internal_files(file_object, overrider=overrider, **kwargs):
+            # Add internal file as File object to file.
+            file_object._content_files[filename] = internal_file_object
+
+            yield internal_file_object
+
+        # Update metadata and actions.
+        file_object.meta.packed = True
+        file_object._actions.listed()
+
+    @classmethod
+    def iterate_package(cls, file_object: BaseFile) -> Iterator[tuple]:
+        """
+        Method to iterate through the buffer to standardize the loop.
+        The method should return a tuple with the following values:
+            (
+                filename,
+                uncompressed length,
+                create date,
+                update date,
+                checksum,
+                checksum keyword,
+                checksum hasher class
+            )
+
+        If no information is available for the attribute None should be returned:
+            (<filename>, <uncompressed length>, None, None, None, "crc323", CRC32Hasher)
+
+        This method must be override in child class.
+        """
+        raise NotImplementedError("Method iterate_buffer must be overwritten on child class.")
+
+    @classmethod
+    def iterate_internal_files(
+        cls,
+        file_object: BaseFile,
+        overrider: bool,
+        **kwargs: Any
+    ) -> Iterator[tuple[str, BaseFile]]:
+        """
+        Method to iterate through the package yielding the filename and internal file created in memory.
+        """
+        file_system: Type[StorageEngine] = file_object.storage
+        file_class: Type[BaseFile] = file_object.__class__
+        file_class._option = file_object._option
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        for (
+            filename, length, create_date, update_date, checksum, checksum_keyword, checksum_class
+        ) in cls.iterate_package(file_object):
+            # Skip duplicate only if not choosing to override.
+            if filename in file_object._content_files and not overrider:
+                continue
+
+            # Create file object for internal file
+            internal_file_object = file_class(
+                path=file_system.join(file_object.save_to, filename),
+                save_to=file_object.save_to,
+                relative_path=file_system.get_directory_from_path(filename).replace(file_object.save_to, ""),
+                extract_data_pipeline=PipelineSequential(
+                    "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+                    "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+                ),
+                file_system_handler=file_system,
+            )
+
+            # Update creation and modified date
+            if create_date:
+                internal_file_object.create_date = create_date
+            if update_date:
+                internal_file_object.update_date = update_date
+
+            # Update size of file
+            if length:
+                internal_file_object.length = length
+
+            if checksum:
+                # Update hash generating the hash file and adding its content
+                hash_file = checksum_class.create_hash_file(
+                    object_to_process=internal_file_object,
+                    digested_hex_value=checksum,
+                )
+                internal_file_object.hashes[checksum_keyword] = (
+                    checksum,
+                    hash_file,
+                    checksum_class,
+                )
+
+            # Set up action to be extracted instead of to save.
+            internal_file_object._actions.to_extract()
+
+            # Set mode to binary as default
+            mode: str = "rb"
+
+            # Set up content pointer to internal file using content_buffer
+            internal_file_object.content_as_buffer = cls.content_buffer(
+                file_object=file_object, internal_file_name=filename, mode=mode
+            )
+            internal_file_object._content.inner = True
+
+            # Set up metadata for internal file
+            internal_file_object.meta.hashable = False
+            internal_file_object.meta.internal = True
+
+            yield filename, internal_file_object
+
+    @classmethod
+    def validate(cls, file_object: BaseFile) -> None:
+        """
+        Method to validate if content can be extract to given extension.
+        """
+        if cls.extensions is None:
+            raise NotImplementedError(
+                f"The attribute `extensions` is not overwritten in child class {cls.__name__}"
+            )
+
+        if cls.compressor_class is None:
+            raise NotImplementedError(
+                f"The attribute `compressor_class` is not overwritten in child class {cls.__name__}"
+            )
+
+        # The ValidationError should be captured in children classes else it will not register as an error and
+        # the pipeline will break.
+        if file_object.extension not in cls.extensions:
+            raise ValidationError(
+                f"Extension `{file_object.extension}` not allowed in validate for class {cls.__name__}"
+            )
+
+    @classmethod
+    def process(cls, **kwargs: Any) -> bool:
+        """
+        Method used to run this class on Processor`s Pipeline for Extracting info from Data.
+        This process method is created exclusively to pipeline for objects inherent from BaseFile.
+
+        The processor for package extraction override the method `BaseExtractor.process` in order to validate
+        the extension before processing the `object_to_process`.
+        """
+        try:
+            object_to_process: BaseFile = kwargs["object_to_process"]
+            cls.validate(file_object=object_to_process)
+        except (ValidationError, KeyError):
+            return False
+
+        overrider: bool = kwargs.pop(
+            "overrider", object_to_process._option.allow_override
+        )
+
+        result = cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
+        raise StopPipeline(f"Stopper called at {cls.__name__}", result)
+
+    @classmethod
+    def process_as_generator(cls, **kwargs: Any) -> Iterator[Any]:
+        object_to_process: BaseFile = kwargs["object_to_process"]
+        cls.validate(file_object=object_to_process)
+
+        overrider: bool = kwargs.pop(
+            "overrider", object_to_process._option.allow_override
+        )
+
+        return cls.extract_as_generator(file_object=object_to_process, overrider=overrider, **kwargs)
 
 
 class BaseRenamer:
@@ -624,11 +1028,7 @@ class BaseRenamer:
     Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
-    file_system_handler: Type[StorageEngine] = StorageEngine
+    storage: Type[StorageEngine] = StorageEngine
     """
     Variable to store the local storage system.
     """
@@ -683,13 +1083,13 @@ class BaseRenamer:
         The keyword argument `reserved_names` allow for override of current list of reserved_names in pipeline. This
         override will affect the class and thus all usage of `reserved_names`. It isn`t thread safe.
 
-        FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
+        FUTURE CONSIDERATION: Making the pipeline multi thread or multiprocess only will require that
         a lock be put between usage of get_name.
         FUTURE CONSIDERATION: Multi thread will need to consider that the attribute `file_system_handler`
         is shared between the reference of the class and all object of it and will have to be change the
-        code (multi process don't have this problem).
+        code (multiprocess don't have this problem).
 
-        This processors return boolean to indicate that process was ran successfully.
+        These processors return boolean to indicate that process was ran successfully.
 
         This method can throw BlockingIOError when trying to rename the file.
         The `Pipeline.run` method will catch it.
@@ -734,7 +1134,7 @@ class BaseRenamer:
         # filename and extension should be property functions.
         object_to_process.complete_filename_as_tuple = (new_filename, extension)
 
-        return True
+        raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
     @classmethod
     def is_name_reserved(cls, filename: str, extension: str) -> bool:
@@ -784,11 +1184,6 @@ class BaseRender:
     This attribute should be override in children classes.
     """
 
-    stopper: bool = True
-    """
-    Variable that define if this class used as processor should stop the pipeline.
-    """
-
     @classmethod
     def create_file(
         cls, object_to_process: BaseFile, content: str | bytes | BytesIO | StringIO
@@ -816,11 +1211,11 @@ class BaseRender:
             cls.render(file_object=object_to_process, **kwargs)
 
         except ValidationError:
-            # We consume and don't register validation error because it is a expected error case the extension is
+            # We consume and don't register validation error because it is an expected error case the extension is
             # not compatible with the method.
             return False
 
-        return True
+        raise StopPipeline(f"Stopper called at {cls.__name__}", True)
 
     @classmethod
     def render(cls, file_object: BaseFile, **kwargs: Any) -> None:

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterator, Type, Any
 
-from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError
+from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError, EmptyHashContentError
 
 if TYPE_CHECKING:
     from . import BaseFile
@@ -43,7 +43,7 @@ class FileHashes:
     Descriptor to storage the digested hashes for the file instance.
     This must be instantiated at `__init__` class. 
     """
-    _loaded: list[Any]
+    _loaded: list[str]
     """
     Descriptor to storage the digested hashes that were loaded from external source. 
     This must be instantiated at `__init__` class.
@@ -120,12 +120,18 @@ class FileHashes:
         """
         return bool(self._cache)
 
+    def __contains__(self, item):
+        """
+        Method to check if item exist in self._cache.
+        """
+        return item in self._cache
+
     @property
     def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes: set = {"_cache", "_loaded", "related_file_object"}
+        attributes: set = {"_cache", "_loaded", "related_file_object", "history"}
 
         return {key: getattr(self, key) for key in attributes}
 
@@ -134,18 +140,21 @@ class FileHashes:
         Method to clean the history of validation results.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
-        self.history: dict[str, list[str]] = {}
+        self.history.clear()
 
-    def keys(self) -> set:
+    def keys(self) -> Iterator[str]:
         """
-        Method to return the keys availabke at `_cache`.
+        Method to return the keys available at `_cache`.
         """
-        return set(self._cache.keys())
+        return map(lambda x: str(x), self._cache.keys())
 
-    def rename(self, new_filename) -> None:
+    def rename(self, new_filename: str) -> None:
         """
         This method will rename file for each hash file existing in _caches.
-        This method don`t save files, only prepare the filename and content to be correct before saving it.
+        This method doesn't save files, only prepare the filename and content to be correct before saving it.
+
+        TODO: Fix to work with already saved hashes.
+              Test saving file hashes.
         """
         for hasher_name, value in self._cache.items():
             hex_value, hash_file, processor = value
@@ -160,14 +169,19 @@ class FileHashes:
             # First we set up content of type binary or string.
             content: bytes | str
 
+            iterable_hash_content = hash_file.content_as_iterator
+
+            if iterable_hash_content is None:
+                raise EmptyHashContentError("There is no loaded or generated content for hash associated with file.")
+
             if hash_file.is_binary:
                 content = b""
 
                 # Then we load content from generator using a loop.
-                for block in hash_file.content_as_iterator:
+                for block in iterable_hash_content:
                     content += block
 
-                # Change file`s filename inside content of hash file.
+                # Change file's filename inside content of hash file.
                 content = content.replace(
                     f"{hash_file.filename}.{hasher_name}".encode("uft-8"),
                     f"{new_filename}.{hasher_name}".encode("uft-8"),
@@ -176,10 +190,10 @@ class FileHashes:
                 content = ""
 
                 # Then we load content from generator using a loop.
-                for block in hash_file.content_as_iterator:
+                for block in iterable_hash_content:
                     content += block
 
-                # Change file`s filename inside content of hash file.
+                # Change file's filename inside content of hash file.
                 content = content.replace(
                     f"{hash_file.filename}.{hasher_name}",
                     f"{new_filename}.{hasher_name}",
@@ -191,7 +205,7 @@ class FileHashes:
 
     def validate(self, force: bool = False) -> None:
         """
-        Method to validate the integrity of file comparing hashes`s hex value with file content.
+        Method to validate the integrity of file comparing hashes' hex value with file content.
         This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
         external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
         """
@@ -203,20 +217,25 @@ class FileHashes:
         for hash_name in self._loaded or self._cache.keys():
             hex_value, hash_file, processor = self._cache[hash_name]
             # Compare content with hex_value
-            result = processor.check_hash(
+            match_result, digested_hash = processor.check_hash(
                 object_to_process=self.related_file_object, compare_to_hex=hex_value
             )
 
             # Add result to history.
             if self.history is None:
-                self.clean_history()
+                self.history: dict[str, list[tuple[str | None, bool | None]]] = {}
 
             if hash_name not in self.history:
-                self.history[hash_name] = [result]
+                self.history[hash_name] = [(digested_hash, match_result)]
             else:
-                self.history[hash_name].append(result)
+                self.history[hash_name].append((digested_hash, match_result))
 
-            if result is False:
+            if match_result is None:
+                raise ValidationError(
+                    f"File {self.related_file_object} don`t have content to check integrity with "
+                    f"{hash_name}!"
+                )
+            if match_result is False:
                 raise ValidationError(
                     f"File {self.related_file_object} don`t pass the integrity check with "
                     f"{hash_name}!"
@@ -228,6 +247,8 @@ class FileHashes:
     def save(self, overwrite: bool = False) -> None:
         """
         Method to save all hashes files if it was not saved already.
+        Due to this method being called in `BaseFile.save()` if `save_hashes`  is True, we force it to be False to avoid
+        circular saving.
         """
         if self.related_file_object is None:
             raise ImproperlyConfiguredFile(
@@ -236,9 +257,18 @@ class FileHashes:
 
         for hex_value, hash_file, processor in self._cache.values():
             if hash_file._actions.save:
+                # Store the old option to not break configurations before overriding `save_hashes`.
+                old_option = hash_file._option.save_hashes
+
+                # Set options to ignore generating hash from hash_file.
+                hash_file._option.save_hashes = False
+
                 # If file is CHECKSUM.<hasher_name> we not allow to overwrite.
                 hash_file._option.allow_overwrite = (
                     False if hash_file.meta.checksum else overwrite
                 )
                 hash_file._option.allow_update = overwrite
                 hash_file.save()
+
+                # Restore old option
+                hash_file._option.save_hashes = old_option

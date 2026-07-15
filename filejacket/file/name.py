@@ -24,10 +24,12 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
+from ..adapters.pipeline import PipelineSequential
 from ..exception import SerializerError, ReservedFilenameError, ImproperlyConfiguredFile
 
 if TYPE_CHECKING:
     from . import BaseFile
+    from ..engines.pipeline import PipelineEngine
 
 __all__ = ["FileNaming"]
 
@@ -88,12 +90,12 @@ class FileNaming:
 
         # We avoid storing information from `reserved_index` and `reserved_filenames` as those should reflect
         # the runtime and can be extensive.
-        attributes = {
+        attributes = (
             "history",
             "on_conflict_rename",
             "related_file_object",
             "previous_saved_extension",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 

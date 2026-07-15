@@ -41,7 +41,7 @@ def test_base_class_for_rendering_raise_not_implemented_error_in_some_attributes
     file_object = request.getfixturevalue(file_fixture)
     
     with pytest.raises(NotImplementedError):
-        BaseRender.create_file(file_object=file_object, content=b"Test content")
+        BaseRender.create_file(object_to_process=file_object, content=b"Test content")
 
     with pytest.raises(NotImplementedError):
         BaseRender.render(file_object=file_object)

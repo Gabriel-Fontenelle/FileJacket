@@ -25,8 +25,8 @@ from __future__ import annotations
 from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
-from .. import Pipeline
 from ..base import BaseRender
+from ...adapters.pipeline import PipelineSequential
 from ...exception import RenderError
 
 if TYPE_CHECKING:
@@ -41,6 +41,8 @@ __all__ = [
     "ImageRender",
     "PSDRender",
     "BaseStaticRender",
+    "VectorRender",
+    "VectorSWFRender",
     "VideoRender",
 ]
 
@@ -59,11 +61,34 @@ class BaseStaticRender(BaseRender):
         """
         defaults: Type[ThumbnailDefaults] = object_to_process._thumbnail.static_defaults
 
+        default_filename = (
+            f"-{defaults.filename}-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+            if defaults.filename else
+            f"-{defaults.width}x{defaults.height}.{defaults.format_extension}"
+        )
+        save_to = object_to_process.save_to
+        if object_to_process.meta.internal:
+            path = object_to_process.storage.join(
+                object_to_process.save_to, f"{object_to_process.relative_path}{default_filename}"
+            )
+            relative_path = object_to_process.storage.get_directory_from_path(object_to_process.relative_path)
+        else:
+            path = f"{object_to_process.sanitize_path}-{default_filename}"
+            relative_path = object_to_process.storage.get_directory_from_path(
+                object_to_process.sanitize_path
+            ).replace(save_to, "")
+
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
-        static_file: BaseFile = object_to_process.__class__(
-            path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
-            extract_data_pipeline=Pipeline(
+        file_class = object_to_process.__class__
+        # passthrough options available in class for BaseFile,
+        # to allow customization to also be available in new file.
+        file_class._option = object_to_process._option
+        static_file: BaseFile = file_class(
+            path=path,
+            save_to=save_to,
+            relative_path=relative_path,
+            extract_data_pipeline=PipelineSequential(
                 "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
                 "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
             ),
@@ -147,12 +172,169 @@ class DocumentFirstPageRender(BaseStaticRender):
         )
 
 
+class VectorRender(BaseStaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the representation of
+    vector image.
+    """
+
+    extensions: set[str] = {"svg"}
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
+        """
+        Method to render the image representation of the file_object.
+        This method will only use the first page of the documents.
+        """
+        image_engine: Type[ImageEngine] = kwargs.pop("image_engine")
+
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
+
+        buffer_content = file_object.content_as_buffer
+
+        if not buffer_content:
+            raise RenderError(
+                "There is no content in buffer format available to render."
+            )
+
+        buffer: BytesIO = BytesIO()
+
+        # Local import to avoid longer time to load FileJacket library.
+        import fitz
+        from reportlab.graphics import renderPDF
+        from svglib.svglib import load_svg_file, SvgRenderer
+
+        svg_root = load_svg_file(buffer_content)
+
+        # convert to a RLG drawing and after that to pdf
+        svgRenderer = SvgRenderer(path=None)
+        drawing = svgRenderer.render(svg_root)
+        pdf = renderPDF.drawToString(drawing)
+
+        # We use fitz from PyMuPDF to open the document.
+        # Because BufferedReader (default return for file_system.open) is not accept
+        # we need to consume to get its bytes as bytes are accepted as stream.
+        doc: fitz.mupdf.FzDocument = fitz.open(
+            stream=pdf,
+            filetype=file_object.extension,
+            # width and height are only used for content that requires rendering of vectors as `epub`.
+            width=defaults.width * 5,
+            height=defaults.height * 5,
+        )
+
+        for page in doc:
+            bitmap = page.get_pixmap(dpi=defaults.format_dpi)
+            # Save the image in buffer with Pillow.
+            bitmap.pil_save(fp=buffer, format=defaults.format)
+            buffer.seek(0)
+            break
+
+        # Resize image using the image_engine and default values.
+        image: ImageEngine = image_engine(buffer=buffer)
+
+        # Trim white space originated from epub.
+        image.trim(color=defaults.color_to_trim)
+
+        # Resize
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._static_file = cls.create_file(
+            file_object, content=image.get_buffer(encode_format=defaults.format)
+        )
+
+
+class VectorSWFRender(BaseStaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the representation of
+    vector image.
+    """
+
+    extensions: set[str] = {"swf"}
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
+        """
+        Method to render the image representation of the file_object.
+        This method will only use the first page of the documents.
+        """
+        image_engine: Type[ImageEngine] = kwargs.pop("image_engine")
+
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
+
+        buffer_content = file_object.content_as_buffer
+
+        if not buffer_content:
+            raise RenderError(
+                "There is no content in buffer format available to render."
+            )
+
+        buffer: BytesIO = BytesIO()
+
+        # Local import to avoid longer time to load FileJacket library.
+        import fitz
+        from reportlab.graphics import renderPDF
+        from svglib.svglib import SvgRenderer
+        from swf.movie import SWF
+        from swf.export import SVGExporter
+
+        import pdb
+        pdb.set_trace()
+        swf = SWF(buffer_content)
+        svg_exporter = SVGExporter()
+
+        svg_root = swf.export(svg_exporter)
+
+        # convert to a RLG drawing and after that to pdf
+        svgRenderer = SvgRenderer(path=None)
+        drawing = svgRenderer.render(svg_root)
+        pdf = renderPDF.drawToString(drawing)
+
+        # We use fitz from PyMuPDF to open the document.
+        # Because BufferedReader (default return for file_system.open) is not accept
+        # we need to consume to get its bytes as bytes are accepted as stream.
+        doc: fitz.mupdf.FzDocument = fitz.open(
+            stream=pdf,
+            filetype=file_object.extension,
+            # width and height are only used for content that requires rendering of vectors as `epub`.
+            width=defaults.width * 5,
+            height=defaults.height * 5,
+        )
+
+        for page in doc:
+            bitmap = page.get_pixmap(dpi=defaults.format_dpi)
+            # Save the image in buffer with Pillow.
+            bitmap.pil_save(fp=buffer, format=defaults.format)
+            buffer.seek(0)
+            break
+
+        # Resize image using the image_engine and default values.
+        image: ImageEngine = image_engine(buffer=buffer)
+
+        # Trim white space originated from epub.
+        image.trim(color=defaults.color_to_trim)
+
+        # Resize
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._static_file = cls.create_file(
+            file_object, content=image.get_buffer(encode_format=defaults.format)
+        )
+
+
 class ImageRender(BaseStaticRender):
     """
     Render class for processing information from file's content focusing in rendering the whole image.
     """
 
-    extensions: set[str] = {"jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp"}
+    extensions: set[str] = {"jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp", "avif", "apng"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """

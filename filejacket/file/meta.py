@@ -22,11 +22,15 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
+from itertools import chain
 from typing import Any
 
 from ..exception import SerializerError
 
 __all__ = ["FileMetadata"]
+
+
+OPTIONAL_METADATA: tuple = ("checksum", "loaded", "preview", "thumbnail")
 
 
 class FileMetadata:
@@ -55,6 +59,10 @@ class FileMetadata:
     internal: bool = False
     """
     Indicate whether an object is a file from a packed container or not.
+    """
+    partial: bool = False
+    """
+    Indicate whether an object is a partial file of a large file.
     """
 
     # Hasher files
@@ -89,7 +97,7 @@ class FileMetadata:
         Method to create the current object using the keyword arguments.
         """
         for key, value in kwargs.items():
-            if hasattr(self, key) or key in {"checksum", "loaded", "thumbnail"}:
+            if hasattr(self, key) or key in OPTIONAL_METADATA:
                 setattr(self, key, value)
             else:
                 raise SerializerError(
@@ -101,7 +109,7 @@ class FileMetadata:
         Method to set attributes that are additional to its own dict at `extra_data`.
         """
         # hasattr method will call getattr that will call `__getattr__`.
-        if hasattr(self, name):
+        if hasattr(self, name) or name in OPTIONAL_METADATA:
             self.__dict__[name] = value
             return
 
@@ -117,13 +125,11 @@ class FileMetadata:
         try:
             return self.__getattribute__(name)
         except AttributeError:
-            if (
-                "extra_data" not in self.__dict__
-                or name not in self.__dict__["extra_data"]
-            ):
+            extra_data = self.__dict__.get("extra_data", {}).get(name)
+            if extra_data is None:
                 raise AttributeError(f"{name} is not an attribute of {self}.")
 
-            return self.__dict__["extra_data"][name]
+            return extra_data
 
     @property
     def __serialize__(self) -> dict[str, bool | dict]:
@@ -131,18 +137,11 @@ class FileMetadata:
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {"packed", "compressed", "lossless", "hashable", "extra_data"}
-        optional_attributes = {
-            "checksum",
-            "loaded",
-            "preview",
-            "thumbnail",
+        required_attributes: set[str] = {"packed", "compressed", "lossless", "hashable", "extra_data"}
+
+        all_attributes = chain(required_attributes, OPTIONAL_METADATA)
+
+        return {
+            key: getattr(self, key) for key in all_attributes
+            if hasattr(self, key) or key in required_attributes
         }
-
-        class_vars = {key: getattr(self, key) for key in attributes}
-
-        for attribute in optional_attributes:
-            if hasattr(self, attribute):
-                class_vars[attribute] = getattr(self, attribute)
-
-        return class_vars

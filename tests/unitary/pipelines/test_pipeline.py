@@ -1,4 +1,4 @@
-from filejacket.pipelines import Processor, Pipeline
+from filejacket.engines.pipeline import Processor, PipelineEngine
 
 
 def test_class_processor_has_required_attribute():
@@ -9,9 +9,9 @@ def test_class_processor_has_required_attribute():
 
 
 def test_class_pipeline_has_required_attribute():
-    assert hasattr(Pipeline, '__init__')
-    assert hasattr(Pipeline, '__getitem__')
-    assert hasattr(Pipeline, '__iter__')
-    assert hasattr(Pipeline, '__serialize__')
-    assert hasattr(Pipeline, 'load_processor_candidates')
-    assert hasattr(Pipeline, 'run')
+    assert hasattr(PipelineEngine, '__init__')
+    assert hasattr(PipelineEngine, '__getitem__')
+    assert hasattr(PipelineEngine, '__iter__')
+    assert hasattr(PipelineEngine, '__serialize__')
+    assert hasattr(PipelineEngine, 'load_processor_candidates')
+    assert hasattr(PipelineEngine, 'run')

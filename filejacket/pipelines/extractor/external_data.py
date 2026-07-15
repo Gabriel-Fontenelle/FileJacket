@@ -29,7 +29,7 @@ from typing import Any, TYPE_CHECKING, Type, IO
 from ..base import BaseExtractor
 
 if TYPE_CHECKING:
-    from io import BytesIO, StringIO
+    from io import BytesIO
 
     from ...file import BaseFile
     from ...engines.storage import StorageEngine
@@ -62,13 +62,15 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         This method will save data in the following attributes of `file_object`:
         - path (sanitized path)
+        - save_to
+        - relative_path
         - filename
         - extension
-        - _meta (compressed, lossless)
+        - meta (compressed, lossless)
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
 
-        # As this extractor don`t guarantee that the file actually exists we don`t mark it
+        # As this extractor don't guarantee that the file actually exists we don't mark it
         as saved.
         """
         if not file_object.path:
@@ -82,20 +84,26 @@ class FilenameAndExtensionFromPathExtractor(BaseExtractor):
 
         file_system_handler: Type[StorageEngine] = file_object.storage
 
-        # Set-up save_to and relative_path
-        file_object.save_to = file_system_handler.get_directory_from_path(
-            file_object.path
-        )
+        # Set-up save_to and relative_path only if not already set-up.
+        # The `save_to` and `relative_path` can be set-up at `__init__` by the
+        # BasePackager for internal files.
+        ## This IF fixes a bug with internal file where the filename wasn't processed correctly due to
+        ## full path of internal file not existing in storage.
+        if file_object.relative_path is None and file_object.save_to is None:
+            file_object.save_to = file_system_handler.get_directory_from_path(
+                file_object.path
+            )
 
-        # Relative path is empty, because save_to is the whole directory
-        file_object.relative_path = ""
+            # Relative path is empty, because save_to is the whole directory
+            file_object.relative_path = ""
 
         # Get complete filename from path
         complete_filename = file_system_handler.get_filename_from_path(file_object.path)
 
         # Check if there is any extension in complete_filename and if there is known extension
-        if "." in complete_filename and file_object.add_valid_filename(
-            complete_filename
+        if "." in complete_filename and (
+            file_object.add_valid_filename(complete_filename)
+            or file_object.add_partial_filename(complete_filename)
         ):
             return
 
@@ -119,7 +127,7 @@ class FilenameFromMetadataExtractor(BaseExtractor):
         This method will save data in the following attributes of `file_object`:
         - filename
         - extension
-        - _meta (compressed, lossless, disposition)
+        - meta (compressed, lossless, disposition)
 
         This method make use of overrider.
         """
@@ -161,8 +169,9 @@ class FilenameFromMetadataExtractor(BaseExtractor):
                 complete_filename = candidate[begin:end]
 
                 # Check if filename has a valid extension
-                if "." in complete_filename and file_object.add_valid_filename(
-                    complete_filename
+                if "." in complete_filename and (
+                    file_object.add_valid_filename(complete_filename)
+                    or file_object.add_partial_filename(complete_filename)
                 ):
                     return
 
@@ -183,6 +192,17 @@ class FilenameFromMetadataExtractor(BaseExtractor):
 
 
 class FileSystemDataExtractor(BaseExtractor):
+    """
+    Class that define the extraction of multiple information from filesystem for files.
+    """
+
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FilenameAndExtensionFromPathExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
+    """
+
     @classmethod
     def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
@@ -243,19 +263,12 @@ class FileSystemDataExtractor(BaseExtractor):
                 file_object.path
             )
 
-        # Define mode from file type
-        mode: str = "rb"
-        encoding: str | None = None
-
-        if file_object.type == "text":
-            # Find charset for non unicode files
-            encoding = file_object.storage.get_charset(file_object.path)
-            mode = "r"
-
         # Get buffer io with disable parse of newline. It is important to allow hash from text content to be the same
         # as the saved file.
-        buffer: BytesIO | StringIO | IO = file_object.storage.open_file(
-            file_object.path, mode=mode, encoding=encoding, disable_newline_parse=True
+        # Always load file as binary even if mimetype is for text to avoid error when trying to produce the correct
+        # hash representation.
+        buffer: BytesIO | IO = file_object.storage.open_file(
+            file_object.path, mode="rb", encoding=None, disable_newline_parse=True
         )
 
         # Set content with buffer, as content is a property it will validate the buffer and
@@ -328,7 +341,7 @@ class MimeTypeFromFilenameExtractor(BaseExtractor):
         - mime_type
         - type
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
         """
         # Check if already is an extension and mimetype, if exists do nothing.
         if file_object.mime_type and not overrider:
@@ -337,28 +350,38 @@ class MimeTypeFromFilenameExtractor(BaseExtractor):
         # Check if there is an extension for file else is not possible to extract metadata from it.
         if not file_object.extension:
             raise ValueError(
-                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtractor.extract`."
+                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtractor.extract`.\n"
+                f"Path informed: `{file_object.path}`."
             )
+
+        if file_object.meta.partial:
+            extension = file_object.extension.rsplit(".", 1)[0]
+        else:
+            extension = file_object.extension
 
         # Save in file_object mimetype and type obtained from mime_type_handler.
         file_object.mime_type = file_object.mime_type_handler.get_mimetype(
-            file_object.extension
+            extension
         )
         file_object.type = file_object.mime_type_handler.get_type(
-            file_object.mime_type, file_object.extension
+            file_object.mime_type, extension
         )
 
         # Save additional metadata to file.
         file_object.meta.compressed = (
-            file_object.mime_type_handler.is_extension_compressed(file_object.extension)
+            file_object.mime_type_handler.is_extension_compressed(extension)
         )
         file_object.meta.lossless = file_object.mime_type_handler.is_extension_lossless(
-            file_object.extension
+            extension
         )
         file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
-            file_object.extension
+            extension
         )
-        file_object._actions.to_list()
+        if file_object.meta.packed:
+            if file_object.meta.partial:
+                file_object._actions.listed()
+            else:
+                file_object._actions.to_list()
 
 
 class MetadataExtractor(BaseExtractor):
@@ -500,7 +523,7 @@ class MetadataExtractor(BaseExtractor):
         - type
         - create_date
         - update_date
-        - _meta (expire, language, packed)
+        - meta (expire, language, packed)
 
         This method make use of overrider.
         """
@@ -626,7 +649,7 @@ class FilenameFromURLExtractor(BaseExtractor):
         - extension
         - relative_path
 
-        This method make use of overrider.
+        This method make use of overrider and consider partial files.
         """
         if file_object.filename and not overrider:
             return
@@ -653,8 +676,9 @@ class FilenameFromURLExtractor(BaseExtractor):
             # The first part of the loop enforce mimetype, second not enforce mimetype.
             for result, enforce_mimetype in results:
                 # Check and set-up filename
-                if result.filename and file_object.add_valid_filename(
-                    result.filename, enforce_mimetype=enforce_mimetype
+                if result.filename and (
+                    file_object.add_valid_filename(result.filename, enforce_mimetype=enforce_mimetype)
+                    or file_object.add_partial_filename(result.filename, enforce_mimetype=enforce_mimetype)
                 ):
                     processed_uri = result.processed_uri
                     break

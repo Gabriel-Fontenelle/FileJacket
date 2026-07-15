@@ -26,12 +26,12 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any
-
 from zlib import crc32
+
+import xxhash
 
 # modules
 from .base import BaseHasher
-
 
 __all__ = ["BaseHasher", "CRC32Hasher", "MD5Hasher", "SHA256Hasher"]
 
@@ -70,6 +70,24 @@ class SHA256Hasher(BaseHasher):
         Method to instantiate the hash generator to be used digesting the hash.
         """
         return hashlib.sha256()
+
+
+class XXHASH128Hasher(BaseHasher):
+    """
+    Class specifying algorithm SHA256 to be used on Hasher pipelines.
+    """
+
+    hasher_name: str = "xxh128"
+    """
+    Name of hasher algorithm and also its extension abbreviation.
+    """
+
+    @classmethod
+    def instantiate_hash(cls) -> Any:
+        """
+        Method to instantiate the hash generator to be used digesting the hash.
+        """
+        return xxhash.xxh128()
 
 
 class CRC32Hasher(BaseHasher):

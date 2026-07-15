@@ -26,7 +26,11 @@ from base64 import b64encode
 from io import StringIO, BytesIO
 from typing import Iterator, Any, TYPE_CHECKING, IO
 
+from charset_normalizer import from_bytes
+
+from ..adapters.pipeline import PipelineSequential
 from ..adapters.storage import LinuxFileSystem
+from ..engines.pipeline import PipelineEngine
 from ..exception import (
     CacheContentNotSeekableError,
     OperationNotAllowed,
@@ -34,8 +38,7 @@ from ..exception import (
     EmptyContentError,
     ImproperlyConfiguredFile,
 )
-from ..pipelines import Pipeline
-from ..pipelines.extractor.package import PackageExtractor
+from ..pipelines.base import BasePackager
 
 if TYPE_CHECKING:
     from . import BaseFile
@@ -58,26 +61,29 @@ class BufferStr:
     encoding: str = "utf-8"
     newline: str | None = ""
 
-    @classmethod
-    def to_bytes(cls, value: str) -> bytes:
+    def to_bytes(self, value: str) -> bytes:
         """
         Method to convert the value to bytes.
         """
-        return value.encode(cls.encoding)
+        return value.encode(self.encoding)
 
-    @classmethod
-    def to_base64(cls, value: str) -> bytes:
+    def to_str(self, value: str) -> str:
+        """
+        Method to convert the value to str.
+        """
+        return value
+
+    def to_base64(self, value: str) -> str:
         """
         Method to convert the value to representation of Base64 in string ASCII.
         """
-        return b64encode(cls.to_bytes(value)).decode("ascii")
+        return b64encode(self.to_bytes(value)).decode("ascii")
 
-    @classmethod
-    def to_buffer(cls, value: str) -> StringIO:
+    def to_buffer(self, value: str) -> StringIO:
         """
         Method to initialize the buffer to handle string.
         """
-        return cls.buffer_class(value)
+        return self.buffer_class(value)
 
 
 class BufferBytes:
@@ -90,29 +96,35 @@ class BufferBytes:
     write_mode: str = "b"
     buffer_class: type = BytesIO
     binary: bool = True
-    encoding: str = "utf-8"
+    encoding: str | None = None
     newline: str | None = None
 
-    @classmethod
-    def to_bytes(cls, value: bytes) -> bytes:
+    def to_bytes(self, value: bytes) -> bytes:
         """
         Method to convert the value to bytes.
         """
         return value
 
-    @classmethod
-    def to_base64(cls, value: bytes) -> bytes:
+    def to_str(self, value: bytes) -> str:
+        """
+        Method to convert the value to str.
+        """
+        if self.encoding is None:
+            self.encoding = getattr(from_bytes(value).best(), "encoding", None)
+
+        return value.decode(encoding=self.encoding)
+
+    def to_base64(self, value: bytes) -> str:
         """
         Method to convert the value to representation of Base64 in string ASCII.
         """
-        return b64encode(cls.to_bytes(value)).decode("ascii")
+        return b64encode(self.to_bytes(value)).decode("ascii")
 
-    @classmethod
-    def to_buffer(cls, value: bytes) -> BytesIO:
+    def to_buffer(self, value: bytes) -> BytesIO:
         """
         Method to initialize the buffer to handle bytes.
         """
-        return cls.buffer_class(value)
+        return self.buffer_class(value)
 
 
 class CacheInFile:
@@ -289,8 +301,10 @@ class NonCache:
         )
 
     def set_cached(self: NonCache):
-        """ """
-        ...
+        """
+        Method to set attribute cached. The class `NonCache` will always return False.
+        """
+        self.cached = False
 
 
 class FileContent:
@@ -298,11 +312,6 @@ class FileContent:
     Class that store file instance content.
     """
 
-    related_file_object: BaseFile
-    related_file_object = None
-    """
-    Variable to work as shortcut for the current related object for the hashes and other data.
-    """
     _block_size: int = 256
     """
     Block size of file to be loaded in each step of iterator.
@@ -314,6 +323,12 @@ class FileContent:
     _iterable_in_use: bool = False
     """
     Indicate whether the method next is currently being used to consume the buffer.
+    """
+
+    inner: bool = False
+    """
+    Indicate whether the content is from the inside of another content. New content obtained from
+    pos-processed compressed buffer are inner content, while the compressed buffer content is not.  
     """
 
     # Buffer handles
@@ -342,27 +357,13 @@ class FileContent:
     File`s content cached stored through the cache abstraction instantiated from cache_helper.
     """
 
-    @classmethod
-    def from_str(cls, value: str, force_cache) -> FileContent:
-        obj = cls.__new__(cls)  # Does not call __init__
-        super(
-            FileContent, obj
-        ).__init__()  # Don't forget to call any polymorphic base class initializers
-
-        obj.buffer_class = BufferStr
-        obj.buffer = BufferStr.to_buffer(value)
-
-        ...
-
-        return obj
-
     def __init__(
         self,
         raw_value: str
         | bytes
         | BytesIO
         | StringIO
-        | PackageExtractor.ContentBuffer
+        | BasePackager.ContentBuffer
         | None = None,
         force: bool = False,
         **kwargs: Any,
@@ -388,8 +389,7 @@ class FileContent:
         if not raw_value:
             raise ValueError("Value pass to FileContent must not be empty!")
 
-        # Binary value of related_file_object should be be set up here, as it came from attribute is_binary from
-        # content.
+        # Binary value for file is set in buffer_helper and is used for attribute is_binary from file.
         if isinstance(raw_value, str):
             # Convert raw content to buffer
             self.buffer_helper = BufferStr()
@@ -484,18 +484,21 @@ class FileContent:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {
+        attributes = (
             "buffer",
             "buffer_helper",
             "cache_helper",
-            "related_file_object",
             "_block_size",
             "_buffer_encoding",
             "cached",
             "_cached_content",
-        }
+            "related_file_object",
+        )
 
         return {key: getattr(self, key) for key in attributes}
+
+    related_file_object: BaseFile
+    related_file_object = None
 
     @property
     def should_load_to_memory(self) -> bool:
@@ -506,17 +509,17 @@ class FileContent:
 
         if not seekable and self.cached:
             raise CacheContentNotSeekableError(
-                f"The cache helper `{self.cache_helper.__name__}` does not produced a seekable buffer"
+                f"The buffer `{self.buffer.__name__}` does not produced a seekable content"
             )
 
         return not seekable and not self.cached
 
     @property
-    def cached(self):
+    def cached(self) -> bool:
         """
         Method to verify if content was cached based on the attribute `cached` in `_cached_content`.
         """
-        return self._cached_content and self._cached_content.cached
+        return bool(self._cached_content and self._cached_content.cached)
 
     @property
     def content(self) -> bytes | str | None:
@@ -526,26 +529,16 @@ class FileContent:
         the data in memory from the cache returning the content.
 
         This method will not cache the content in memory if `self.cache_helper` is `NonCache`.
+        The method can raise OperationNotAllowed or EmptyContentError.
         """
         if self._cached_content is None:
             self._cached_content = self.cache_helper(buffer_helper=self.buffer_helper)
 
-        try:
-            # Consume content passing the iterator to the cache class.
-            # The `NonCache` class will not, and should not, perform any action on the iterator.
-            self._cached_content.consume(iterator=self)
+        # Consume content passing the iterator to the cache class.
+        # The `NonCache` class will not, and should not, perform any action on the iterator.
+        self._cached_content.consume(iterator=self)
 
-            return self._cached_content.load_from_cache()
-
-        except OperationNotAllowed as e:
-            raise ImproperlyConfiguredFile(
-                f"The file {self.related_file_object} is not set-up to load to memory its content. "
-                "You should call `_content.content_as_buffer` instead of `_content.content`"
-            ) from e
-        except EmptyContentError as e:
-            raise EmptyContentError(
-                f"No content was loaded for file {self.related_file_object.complete_filename}"
-            ) from e
+        return self._cached_content.load_from_cache()
 
     @property
     def content_as_buffer(self) -> BytesIO | StringIO:
@@ -557,7 +550,10 @@ class FileContent:
             # Load content to memory with `self.content` and return the adequate buffer.
             try:
                 return self.buffer_helper.to_buffer(self.content)
-            except ImproperlyConfiguredFile:
+            except (
+                ImproperlyConfiguredFile,
+                OperationNotAllowed
+            ):
                 # Change cache to load from memory because the current `cache_helper` does not consume the content
                 # and save it in a cache.
                 self._cached_content = CacheInMemory()
@@ -574,12 +570,42 @@ class FileContent:
             return self.buffer
 
     @property
+    def content_as_str(self) -> str | None:
+        """
+        Method to obtain the content as string.
+        This method should not be used to convert a content buffered and not cached to str.
+        """
+        try:
+            return self.buffer_helper.to_str(self.content)
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
+            ...
+
+        try:
+            # No content found, try again with buffer loading the whole buffer in memory.
+            return self.buffer_helper.to_str(self.content_as_buffer.read())
+        except OperationNotAllowed:
+            ...
+
+        return None
+
+    @property
     def content_as_bytes(self) -> bytes | None:
         """
         Method to obtain the content as bytes.
         This method should not be used to convert a content buffered and not cached to byte.
         """
-        return self.buffer_helper.to_bytes(self.content)
+        try:
+            return self.buffer_helper.to_bytes(self.content)
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
+            ...
+
+        try:
+            # No content found, try again with buffer loading the whole buffer in memory.
+            return self.buffer_helper.to_bytes(self.content_as_buffer.read())
+        except OperationNotAllowed:
+            ...
+
+        return None
 
     @property
     def content_as_base64(self) -> bytes | None:
@@ -591,7 +617,7 @@ class FileContent:
         try:
             # Load content and convert to base64
             return self.buffer_helper.to_base64(self.content)
-        except (EmptyContentError, ImproperlyConfiguredFile):
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
             ...
 
         try:
@@ -659,13 +685,13 @@ class FilePacket:
     TODO: Reduce memory usage for listing File from buffer.
     """
     
-    _internal_files: dict[str, tuple[BaseFile, int]]
+    _internal_files: dict[str, tuple[BaseFile, int, str]]
     """
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.
     This must be instantiated at `__init__` method.
     """
-    
+
     history: list
     history = None
     """
@@ -677,11 +703,11 @@ class FilePacket:
     """
 
     # Pipelines
-    unpack_data_pipeline: Pipeline = Pipeline(
-        "filejacket.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.RarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.TarCompressedFilesFromPackageExtractor",
-        "filejacket.pipelines.extractor.ZipCompressedFilesFromPackageExtractor",
+    unpack_data_pipeline: PipelineEngine = PipelineSequential(
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor",
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
@@ -703,13 +729,13 @@ class FilePacket:
                     f"Class {self.__class__.__name__} doesn't have an attribute called {key}."
                 )
 
-    def __getitem__(self: FilePacket, item: int | str) -> tuple[BaseFile, int]:
+    def __getitem__(self: FilePacket, item: int | str) -> tuple[BaseFile, int, str]:
         """
         Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
         This method will try to retrieve an element from the dictionary by index if item is numeric.
         """
         if isinstance(item, int):
-            return list(self.files())[item]
+            return list(map(lambda x: x[1], self.__iter__()))[item]
 
         return self._internal_files[item]
 
@@ -731,7 +757,7 @@ class FilePacket:
             )
         length = len(value)
         self.length += length
-        self._internal_files[key] = value, length
+        self._internal_files[key] = value, length, value.type
 
     def __len__(self: FilePacket) -> int:
         """
@@ -740,7 +766,7 @@ class FilePacket:
         """
         return len(self._internal_files)
 
-    def __iter__(self: FilePacket) -> Iterator[tuple[BaseFile, int]]:
+    def __iter__(self: FilePacket) -> Iterator[tuple[str, tuple[BaseFile, int, str]]]:
         """
         Method to return current object as iterator. As it already implements __next__ we just return the current
         object.
@@ -752,7 +778,7 @@ class FilePacket:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_internal_files", "unpack_data_pipeline", "history", "length"}
+        attributes = ("_internal_files", "unpack_data_pipeline", "history", "length")
 
         return {key: getattr(self, key) for key in attributes}
 
@@ -761,32 +787,38 @@ class FilePacket:
         Method to clean the history of internal_files.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
-        self.history = []
+        self.history.clear()
 
-    def files(self: FilePacket) -> list[BaseFile]:
+    def files(self: FilePacket) -> Iterator[BaseFile]:
         """
-        Method to obtain the list of objects File stored at `_internal_files`.
+        Method to obtain the generator for the list of objects File stored at `_internal_files`.
         """
-        return [i[0] for i in self._internal_files.values()]
+        return map(lambda x: x[0], self._internal_files.values())
     
-    def files_length(self: FilePacket) -> list[int]:
+    def files_length(self: FilePacket) -> Iterator[int]:
         """
-        Method to obtain the list of length of File stored at `_internal_files`.
+        Method to obtain the generator for the list of length of File stored at `_internal_files`.
         """
-        return [i[1] for i in self._internal_files.values()]
-    
-    def names(self: FilePacket) -> list[str]:
+        return map(lambda x: x[1], self._internal_files.values())
+
+    def files_type(self: FilePacket) -> Iterator[str]:
+        """
+        Method to obtain the generator for the list of File's type stored at `_internal_files`.
+        """
+        return map(lambda x: x[2], self._internal_files.values())
+
+    def names(self: FilePacket) -> Iterator[str]:
         """
         Method to obtain the list of names of internal files stored at `_internal_files`.
         """
-        return list(self._internal_files.keys())
+        return map(lambda x: str(x), self._internal_files.keys())
 
     def reset(self: FilePacket) -> None:
         """
         Method to clean the internal files keeping a history of changes.
         """
         if self.history is None:
-            self.clean_history()
+            self.history = []
 
         if self._internal_files:
             # Add current internal files to memory

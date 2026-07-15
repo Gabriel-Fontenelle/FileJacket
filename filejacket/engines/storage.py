@@ -44,12 +44,11 @@ from os.path import (
 from pathlib import (
     Path,
 )
-from uuid import uuid4
-
 # third-party
 from shutil import copyfile, rmtree, move
 from sys import version_info
 from typing import Any, TYPE_CHECKING, Generator, Iterator, Pattern, IO
+from uuid import uuid4
 
 from charset_normalizer import from_path
 from send2trash import send2trash
@@ -310,8 +309,9 @@ class StorageEngine:
         if cls.exists(file_path_origin) and (
             not cls.exists(file_path_destination) or force
         ):
-            move(file_path_origin, file_path_destination) == file_path_destination
-            return True
+            if cls.exists(cls.get_directory_from_path(file_path_destination)):
+                move(file_path_origin, file_path_destination)
+                return True
 
         return False
 
@@ -525,7 +525,8 @@ class StorageEngine:
     @classmethod
     def get_charset(cls, path: str) -> str | None:
         """
-        Method to get the charset from a given file."""
+        Method to get the charset from a given file.
+        """
         guessed = from_path(path).best()
 
         if not guessed:

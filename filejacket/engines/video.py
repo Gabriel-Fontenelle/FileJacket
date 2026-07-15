@@ -27,7 +27,7 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from io import BytesIO
 
-    from .pipelines.extractor.package import PackageExtractor
+    from ..pipelines.base import BasePackager
 
 __all__ = [
     "VideoEngine",
@@ -49,7 +49,7 @@ class VideoEngine:
     Attribute where the current video metadata is stored.
     """
 
-    def __init__(self, buffer: BytesIO | PackageExtractor.ContentBuffer) -> None:
+    def __init__(self, buffer: BytesIO | BasePackager.ContentBuffer) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source
         for manipulation by the class to be used.

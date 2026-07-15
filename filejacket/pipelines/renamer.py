@@ -31,7 +31,6 @@ from uuid import uuid4
 # modules
 from .base import BaseRenamer
 
-
 __all__ = ["WindowsRenamer", "LinuxRenamer", "UniqueRenamer"]
 
 
@@ -52,12 +51,12 @@ class WindowsRenamer(BaseRenamer):
         the style of Windows: `new name (1).ext`
         """
         # Prepare filename and extension removing enumeration from filename
-        # and setting up a empty string is extension is None
+        # and setting up an empty string is extension is None
         filename = cls.enumeration_pattern.sub("", filename)
         formatted_extension: str = f".{extension}" if extension else ""
 
         i = 0
-        while cls.file_system_handler.exists(
+        while cls.storage.exists(
             directory_path + filename + formatted_extension
         ) or cls.is_name_reserved(filename, formatted_extension):
             i += 1
@@ -83,12 +82,12 @@ class LinuxRenamer(BaseRenamer):
         the style of Linux: `new name - 1.ext`
         """
         # Prepare filename and extension removing enumeration from filename
-        # and setting up a empty string is extension is None
+        # and setting up an empty string is extension is None
         filename = cls.enumeration_pattern.sub("", filename)
         formatted_extension: str = f".{extension}" if extension else ""
 
         i = 0
-        while cls.file_system_handler.exists(
+        while cls.storage.exists(
             directory_path + filename + formatted_extension
         ) or cls.is_name_reserved(filename, formatted_extension):
             i += 1
@@ -114,7 +113,7 @@ class UniqueRenamer(BaseRenamer):
 
         i = 0
         while (
-            cls.file_system_handler.exists(
+            cls.storage.exists(
                 directory_path + filename + formatted_extension
             )
             or cls.is_name_reserved(filename, formatted_extension)

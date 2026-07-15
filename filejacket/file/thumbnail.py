@@ -23,17 +23,18 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import itertools
-from typing import Any, Type, TYPE_CHECKING
+from typing import Any, Type, TYPE_CHECKING, Iterator
 
-from ..exception import SerializerError
 from ..adapters.image import WandImage
-from ..pipelines import Pipeline
-from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
+from ..adapters.pipeline import PipelineSequential
 from ..adapters.video import MoviePyVideo
+from ..exception import SerializerError
+from ..pipelines.packager import PSDLayersFromPackageExtractor
 
 if TYPE_CHECKING:
     from . import BaseFile
     from ..engines.image import ImageEngine
+    from ..engines.pipeline import PipelineEngine
     from ..adapters.video import VideoEngine
 
 __all__ = [
@@ -195,17 +196,19 @@ class FileThumbnail:
     """
 
     # Pipelines
-    render_static_pipeline: Pipeline = Pipeline(
+    render_static_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.render.static.DocumentFirstPageRender",
         "filejacket.pipelines.render.static.ImageRender",
         "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
         "filejacket.pipelines.render.static.VideoRender",
     )
     """
     Pipeline to render thumbnail representation from multiple source. For it to work, its classes should implement 
     stopper as True.
     """
-    render_animated_pipeline: Pipeline = Pipeline(
+    render_animated_pipeline: PipelineEngine = PipelineSequential(
         "filejacket.pipelines.render.animated.StaticAnimatedRender",
         "filejacket.pipelines.render.animated.ImageAnimatedRender",
         "filejacket.pipelines.render.animated.PSDAnimatedRender",
@@ -217,7 +220,7 @@ class FileThumbnail:
     implement stopper as True.
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self: FileThumbnail, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -230,12 +233,12 @@ class FileThumbnail:
                 )
 
     @property
-    def __serialize__(self) -> dict[str, Any]:
+    def __serialize__(self: FileThumbnail) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
 
-        attributes = {
+        attributes = (
             "static_defaults",
             "animated_defaults",
             "history",
@@ -246,64 +249,26 @@ class FileThumbnail:
             "video_engine",
             "render_static_pipeline",
             "render_animated_pipeline",
-        }
+        )
 
         return {key: getattr(self, key) for key in attributes}
 
-    @property
-    def thumbnail(self) -> BaseFile:
-        """
-        Method to compose the cover for the file, also known as thumbnail.
-        This method should return only one image.
-
-        If there is a composer engine in static_defaults, a mix of pages will be resized and combined in one image.
-        If there is no image to represent the file, and there is a default engine in static_defaults, a default image
-        will be composed else _static_file will be set to False.
-        """
-        if self.related_file_object._actions.thumbnail:
-            self.reset(name="_static_file")
-
-        # Generate static file if not exists already
-        if self._static_file is None:
-            self._generate_file(name="static", defaults=self.static_defaults)
-
-        return self._static_file
-
-    @property
-    def preview(self) -> BaseFile:
-        """
-        Method to compose the preview animated for the file.
-        This method should return only one animated image.
-
-        If there is a composer engine in animated_defaults, a mix of animated images will be merged in one image.
-        If there is no image to represent the file, and there is a default engine in animated_defaults, a default image
-        will be composed else _animated_file will be set to False.
-        """
-        if self.related_file_object._actions.preview:
-            self.reset(name="_animated_file")
-
-        # Generate animated file if not exists already
-        if self._animated_file is None:
-            self._generate_file(name="animated", defaults=self.animated_defaults)
-
-        return self._animated_file
-
-    def _conclude_static_action(self) -> None:
+    def _conclude_static_action(self: FileThumbnail) -> None:
         """
         Method to apply the action related with generating a static thumbnail file.
         As convention this method should be considered private and not called outside internal use.
         """
         self.related_file_object._actions.thumbnailed()
 
-    def _conclude_animated_action(self) -> None:
+    def _conclude_animated_action(self: FileThumbnail) -> None:
         """
         Method to apply the action related with generating an animate preview file.
         As convention this method should be considered private and not called outside internal use.
         """
         self.related_file_object._actions.previewed()
 
-    def _generate_file(
-        self, defaults: Type[ThumbnailDefaults], name: str = "static"
+    def generate_file(
+        self: FileThumbnail, defaults: Type[ThumbnailDefaults], name: str = "static"
     ) -> None:
         """
         Method to process a list of files in order to generate thumbnail's or previews' files.
@@ -317,7 +282,7 @@ class FileThumbnail:
         """
 
         # Obtain the current list of files that could be used for generating previews.
-        files: list[BaseFile] = self._get_files_to_process(defaults)
+        files: Iterator[BaseFile] = self._get_files_to_process(defaults)
 
         to_be_processed: list[BaseFile] = []
 
@@ -372,8 +337,8 @@ class FileThumbnail:
         getattr(self, f"_conclude_{name}_action")()
 
     def _get_files_to_process(
-        self, defaults: Type[ThumbnailDefaults]
-    ) -> list[BaseFile]:
+        self: FileThumbnail, defaults: Type[ThumbnailDefaults]
+    ) -> Iterator[BaseFile]:
         """
         Method to obtain the list of files to process considering if current related file object is a package with
         internal files or not.
@@ -383,64 +348,105 @@ class FileThumbnail:
             self.related_file_object.meta.packed
             and self.related_file_object.extension not in defaults.packed_to_ignore
         ):
+            # We use the file_object._content_files instead of file_object.files to avoid listing all content
+            # preferring using the generator.
+
+            iterate_files = (
+                self.related_file_object._content_files.files()
+                if self.related_file_object._content_files.length
+                else self.related_file_object.files_as_generator()
+            )
+
             # Check if there is an element in iterator, else the self.related_file_object will be used.
-            first, second = itertools.tee(self.related_file_object.files, 2)
+            first_iterator, cloned_iterator = itertools.tee(iterate_files, 2)
             try:
-                next(second)
-                files = list(first)
+                next(cloned_iterator)
+                files = first_iterator
             except StopIteration:
-                files = [self.related_file_object]
+                files = {self.related_file_object}
         else:
-            files = [self.related_file_object]
+            files = {self.related_file_object}
 
-        return files
+        return iter(files)
 
-    def clean_history(self) -> None:
+    def clean_history(self: FileThumbnail) -> None:
         """
         Method to clean the history of file thumbnail.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
+        if self.history:
+            del self.history
+
         self.history: dict[str, list[BaseFile]] = {
             "_static_file": [],
             "_animated_file": [],
         }
 
-    def display_image(self) -> None:
+    def display_image(self: FileThumbnail) -> None:
         """
         Method to debug the current static image showing it with the available image engine.
         This method make use of property thumbnail to generate the thumbnail image if not
         processed already.
         """
-        buffer = self.thumbnail.content_as_buffer
+        buffer = self._static_file.content_as_buffer
         if buffer:
             image = self.image_engine(buffer=buffer)
             image.show()
 
-    def display_animation(self) -> None:
+    def display_animation(self: FileThumbnail) -> None:
         """
         Method to debug the current animated image showing it with the available image engine.
         This method make use of property preview to generate the thumbnail image if not
         processed already.
         """
-        buffer = self.preview.content_as_buffer
-        if buffer:
-            image = self.image_engine(buffer=buffer)
-            image.show()
+        buffer = self._animated_file.content_as_buffer
 
-    def reset(self, name: str = "_static_file") -> None:
+        from moviepy.video.io import ImageSequenceClip
+
+        image = self.image_engine(buffer=buffer)
+
+        from multiprocessing import cpu_count
+        import numpy as np
+        MAX_THREADS = 16  # pooling issues crop up above 16 threads
+        THREADS = int(np.min((cpu_count(), MAX_THREADS)))
+
+        # Convert to np array.
+        np_array = image.image.sequence
+        import pytest
+        pytest.set_trace()
+
+        clip = ImageSequenceClip.ImageSequenceClip(sequence=np_array, fps=1)
+        clip.preview(fps=1)
+
+        #clip.write_videofile("tmp/tes.mp4", threads=THREADS)
+        #clip.ipython_display(fps=20, loop=True, autoplay=True)
+
+        # if buffer:
+        #     video = self.video_engine(buffer=buffer)
+        #     video.show()
+
+    def reset(self: FileThumbnail, name: str = "_static_file") -> None:
         """
         Method to clean the generated thumbnail keeping a history of changes.
         This method can be used for both static file and animated file, informing the attribute related
         to the file through the parameter `name`.
+
+        The method will not add files that are `False` to its historic.
         """
         if self.history is None:
             self.clean_history()
 
-        file_generated: BaseFile | None = getattr(self, name)
+        file_generated: BaseFile | None = getattr(self, name, None)
 
         if file_generated:
             # Add current generated file to memory
             self.history[name].append(file_generated)
 
-            # Reset the internal files
-            setattr(self, name, None)
+        # Reset the internal files. If it was False
+        setattr(self, name, None)
+
+    def rename(self, new_filename: str) -> None:
+        pass
+
+    def save(self):
+        pass
