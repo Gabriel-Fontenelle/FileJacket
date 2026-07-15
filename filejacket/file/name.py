@@ -24,10 +24,12 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
+from ..adapters.pipeline import PipelineSequential
 from ..exception import SerializerError, ReservedFilenameError, ImproperlyConfiguredFile
 
 if TYPE_CHECKING:
     from . import BaseFile
+    from ..engines.pipeline import PipelineEngine
 
 __all__ = ["FileNaming"]
 
