@@ -1140,6 +1140,15 @@ class BaseFile:
         if not self._thumbnail._animated_file:
             self._thumbnail.generate_file(name="animated", defaults=self._thumbnail.animated_defaults)
 
+    def generate_description(self: BaseFile, force: bool = False) -> None:
+        pass
+
+    def generate_desktop_shortcut(self: BaseFile, force: bool = False) -> None:
+        pass
+
+    def generate_info(self: BaseFile, force: bool = False) -> None:
+        pass
+
     def get_content(self: BaseFile, item: int | str) -> tuple[BaseFile, int, str]:
         """
         Method to return an internal content by index or filename.

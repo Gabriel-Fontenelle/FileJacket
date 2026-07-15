@@ -399,25 +399,48 @@ class FileThumbnail:
         This method make use of property preview to generate the thumbnail image if not
         processed already.
         """
-        if buffer:
-            image = self.image_engine(buffer=buffer)
-            image.show()
         buffer = self._animated_file.content_as_buffer
 
-    def reset(self, name: str = "_static_file") -> None:
+        from moviepy.video.io import ImageSequenceClip
+
+        image = self.image_engine(buffer=buffer)
+
+        from multiprocessing import cpu_count
+        import numpy as np
+        MAX_THREADS = 16  # pooling issues crop up above 16 threads
+        THREADS = int(np.min((cpu_count(), MAX_THREADS)))
+
+        # Convert to np array.
+        np_array = image.image.sequence
+        import pytest
+        pytest.set_trace()
+
+        clip = ImageSequenceClip.ImageSequenceClip(sequence=np_array, fps=1)
+        clip.preview(fps=1)
+
+        #clip.write_videofile("tmp/tes.mp4", threads=THREADS)
+        #clip.ipython_display(fps=20, loop=True, autoplay=True)
+
+        # if buffer:
+        #     video = self.video_engine(buffer=buffer)
+        #     video.show()
+
+    def reset(self: FileThumbnail, name: str = "_static_file") -> None:
         """
         Method to clean the generated thumbnail keeping a history of changes.
         This method can be used for both static file and animated file, informing the attribute related
         to the file through the parameter `name`.
+
+        The method will not add files that are `False` to its historic.
         """
         if self.history is None:
             self.clean_history()
 
-        file_generated: BaseFile | None = getattr(self, name)
+        file_generated: BaseFile | None = getattr(self, name, None)
 
         if file_generated:
             # Add current generated file to memory
             self.history[name].append(file_generated)
 
-            # Reset the internal files
-            setattr(self, name, None)
+        # Reset the internal files. If it was False
+        setattr(self, name, None)
