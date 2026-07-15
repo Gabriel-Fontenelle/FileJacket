@@ -253,44 +253,6 @@ class FileThumbnail:
 
         return {key: getattr(self, key) for key in attributes}
 
-    @property
-    def thumbnail(self: FileThumbnail) -> BaseFile:
-        """
-        Method to compose the cover for the file, also known as thumbnail.
-        This method should return only one image.
-
-        If there is a composer engine in static_defaults, a mix of pages will be resized and combined in one image.
-        If there is no image to represent the file, and there is a default engine in static_defaults, a default image
-        will be composed else _static_file will be set to False.
-        """
-        if self.related_file_object._actions.thumbnail:
-            self.reset(name="_static_file")
-
-        # Generate static file if not exists already
-        if self._static_file is None:
-            self._generate_file(name="static", defaults=self.static_defaults)
-
-        return self._static_file
-
-    @property
-    def preview(self: FileThumbnail) -> BaseFile:
-        """
-        Method to compose the preview animated for the file.
-        This method should return only one animated image.
-
-        If there is a composer engine in animated_defaults, a mix of animated images will be merged in one image.
-        If there is no image to represent the file, and there is a default engine in animated_defaults, a default image
-        will be composed else _animated_file will be set to False.
-        """
-        if self.related_file_object._actions.preview:
-            self.reset(name="_animated_file")
-
-        # Generate animated file if not exists already
-        if self._animated_file is None:
-            self._generate_file(name="animated", defaults=self.animated_defaults)
-
-        return self._animated_file
-
     def _conclude_static_action(self: FileThumbnail) -> None:
         """
         Method to apply the action related with generating a static thumbnail file.
@@ -305,7 +267,7 @@ class FileThumbnail:
         """
         self.related_file_object._actions.previewed()
 
-    def _generate_file(
+    def generate_file(
         self: FileThumbnail, defaults: Type[ThumbnailDefaults], name: str = "static"
     ) -> None:
         """
@@ -392,7 +354,7 @@ class FileThumbnail:
             iterate_files = (
                 self.related_file_object._content_files.files()
                 if self.related_file_object._content_files.length
-                else self.related_file_object.files_as_generator
+                else self.related_file_object.files_as_generator()
             )
 
             # Check if there is an element in iterator, else the self.related_file_object will be used.
@@ -412,6 +374,9 @@ class FileThumbnail:
         Method to clean the history of file thumbnail.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
+        if self.history:
+            del self.history
+
         self.history: dict[str, list[BaseFile]] = {
             "_static_file": [],
             "_animated_file": [],
@@ -423,7 +388,7 @@ class FileThumbnail:
         This method make use of property thumbnail to generate the thumbnail image if not
         processed already.
         """
-        buffer = self.thumbnail.content_as_buffer
+        buffer = self._static_file.content_as_buffer
         if buffer:
             image = self.image_engine(buffer=buffer)
             image.show()
@@ -434,10 +399,10 @@ class FileThumbnail:
         This method make use of property preview to generate the thumbnail image if not
         processed already.
         """
-        buffer = self.preview.content_as_buffer
         if buffer:
             image = self.image_engine(buffer=buffer)
             image.show()
+        buffer = self._animated_file.content_as_buffer
 
     def reset(self, name: str = "_static_file") -> None:
         """

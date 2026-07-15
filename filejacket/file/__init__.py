@@ -843,21 +843,23 @@ class BaseFile:
     def thumbnail(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the thumbnail representation of current content.
+        This method will not generate the thumbnail if there is none.
         """
         if self._content is None:
             return None
 
-        return self._thumbnail.thumbnail
+        return self._thumbnail._static_file
 
     @property
     def preview(self: BaseFile) -> BaseFile | None:
         """
         Method to return as attribute the file object for the animated preview of current content.
+        This method will not generate the preview if there is none.
         """
         if self._content is None:
             return None
 
-        return self._thumbnail.preview
+        return self._thumbnail._animated_file
 
     def _get_kwargs_for_pipeline(
         self: BaseFile, pipeline_name: str | None = None
@@ -1097,6 +1099,46 @@ class BaseFile:
             )
 
             self._actions.hashed()
+
+    def generate_thumbnail(self: BaseFile, force: bool = False) -> None:
+        """
+        Method to compose the cover for the file, also known as thumbnail.
+        This method generate only one image.
+
+        If there is a composer engine in static_defaults, a mix of pages will be resized and combined in one image.
+        If there is no image to represent the file, and there is a default engine in static_defaults, a default image
+        will be composed else _static_file will be set to False.
+
+        When _static_file is already False the method will try again to generate a preview.
+
+        TODO: Change force to try loading the thumbnail from external file similar to how generate hashes do.
+        """
+        if force:
+            self._thumbnail.reset(name="_static_file")
+
+        # Generate static file if not exists already
+        if not self._thumbnail._static_file:
+            self._thumbnail.generate_file(name="static", defaults=self._thumbnail.static_defaults)
+
+    def generate_preview(self: BaseFile, force: bool = False) -> None:
+        """
+        Method to compose the preview animated for the file.
+        This method generate only one animated image.
+
+        If there is a composer engine in animated_defaults, a mix of animated images will be merged in one image.
+        If there is no image to represent the file, and there is a default engine in animated_defaults, a default image
+        will be composed else _animated_file will be set to False.
+
+        When _animated_file is already False the method will try again to generate a preview.
+        TODO: Change force to try loading the thumbnail from external file similar to how generate hashes do.
+        """
+        # Force will reset the _animated_file to None only when .
+        if force:
+            self._thumbnail.reset(name="_animated_file")
+
+        # Generate animated file if not exists already.
+        if not self._thumbnail._animated_file:
+            self._thumbnail.generate_file(name="animated", defaults=self._thumbnail.animated_defaults)
 
     def get_content(self: BaseFile, item: int | str) -> tuple[BaseFile, int, str]:
         """
