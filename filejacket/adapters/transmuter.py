@@ -588,19 +588,18 @@ class TransmuterContent(TransmuterEngine):
         transmuter_class = TransmuterClass()
         transmuter_class.serializer = self.serializer
 
-        if buffer[0] == "internal":
-            buffer = buffer[1].split(":")
-            buffer[0]  # buffer_filename
-            buffer[1]  # buffer_mode
-            buffer[2]  # buffer_reference
+        if buffer[0][:9] == "internal:":
+            buffer_file, buffer_class_path = buffer
+            buffer_internal, buffer_filename, buffer_mode = buffer_file.split(":")
 
-            buffer_class = transmuter_class.to_data(buffer[2], reference=reference)
+            buffer_class = transmuter_class.to_data(buffer_class_path, reference=reference)
             buffered = buffer_class.content_buffer(
-                file_object=reference, internal_file_name=buffer[0], mode=buffer[1]
+                file_object=reference, internal_file_name=buffer_filename, mode=buffer_mode
             )
 
         else:
-            buffered = reference.storage.open_file(path=buffer[0], mode=buffer[1])
+            buffer_file, buffer_mode = buffer
+            buffered = reference.storage.open_file(path=buffer_file, mode=buffer_mode)
 
         buffer_helper = value.pop("buffer_helper").rsplit(":", 1)
 
