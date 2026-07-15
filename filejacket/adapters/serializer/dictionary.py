@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
-from engines.serializer import Serializer
+from ...engines.serializer import Serializer
 from ..transmuter import (
     TransmuterDatetime,
     TransmuterClass,
