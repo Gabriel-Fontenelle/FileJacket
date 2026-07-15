@@ -54,7 +54,7 @@ class SerializerJsonMixin:
         """
         from json import dumps
 
-        dict_to_convert = super().serialize(source=source)
+        dict_to_convert = super(SerializerJsonMixin, cls).serialize(source=source)
 
         return dumps(dict_to_convert)
 
@@ -67,7 +67,7 @@ class SerializerJsonMixin:
 
         dict_to_parse = loads(source)
 
-        return super().deserialize(source=dict_to_parse)
+        return super(SerializerJsonMixin, cls).deserialize(source=dict_to_parse)
 
 
 class FileJsonSerializer(SerializerJsonMixin, FileDictionarySerializer):
