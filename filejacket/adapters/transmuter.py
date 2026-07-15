@@ -27,10 +27,10 @@ from datetime import datetime, time
 from importlib import import_module
 from typing import Any, Type, TYPE_CHECKING
 
-from filejacket.exception import SerializerError
-from filejacket.file.content import FileContent, FilePacket
-from filejacket.file.hasher import FileHashes
-from filejacket.file.thumbnail import FileThumbnail
+from ..exception import SerializerError
+from ..file.content import FileContent, FilePacket
+from ..file.hasher import FileHashes
+from ..file.thumbnail import FileThumbnail
 from ..adapters.pipeline import PipelineOrderedDependency
 from ..engines.pipeline import PipelineEngine
 from ..engines.transmuter import TransmuterEngine
@@ -222,6 +222,8 @@ class TransmuterThumbnail(TransmuterEngine):
         """
         Method to convert `value` to dict for serialization.
         """
+        from ..adapters.serializer import FileWithContentDictionarySerializer
+
         thumbnail = value.__serialize__
 
         # Convert _static_file and _animated_file to Base64
@@ -268,6 +270,8 @@ class TransmuterThumbnail(TransmuterEngine):
         """
         Method to reverse the conversion at `from_data`.
         """
+        from ..adapters.serializer import FileWithContentDictionarySerializer
+
         file_thumbnail = FileThumbnail()
         file_thumbnail.related_file_object = reference
 
@@ -521,6 +525,7 @@ class TransmuterContent(TransmuterEngine):
             )
 
         del dict_to_return["_cached_content"]
+        del dict_to_return["related_file_object"]
 
         transmuter_class_object = TransmuterObjectClass()
         transmuter_class_object.serializer = self.serializer
@@ -612,6 +617,7 @@ class TransmuterContent(TransmuterEngine):
         return FileContent(
             raw_value=None,
             buffer=buffered,
+            related_file_object=reference,
             buffer_helper=buffer_helper_object,
             cache_helper=cache_helper_class,
             **value,
