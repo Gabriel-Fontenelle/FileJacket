@@ -40,6 +40,7 @@ __all__ = [
     "DocumentMetadataFromContentExtractor",
     "MimeTypeFromContentExtractor",
     "VideoMetadataFromContentExtractor",
+    "ImageMetadataFromContentExtractor",
 ]
 
 
@@ -48,6 +49,13 @@ class VideoMetadataFromContentExtractor(BaseExtractor):
     Extractor class created for extracting metadata contained in videos using MoviePy.
     This class don't validate any extensions to see if it's video, so any exception that this class output will
     be caught only in stack above.
+    """
+
+    dependencies = [
+        "filejacket.pipelines.extractor.external_data.FileSystemDataExtractor"
+    ]
+    """
+    List of extractor dependencies for this extractor to work properly.
     """
 
     @classmethod
@@ -72,6 +80,12 @@ class VideoMetadataFromContentExtractor(BaseExtractor):
                 "`VideoMetadataFromContentExtractor.extract` to work!"
             )
 
+        if file_object.type != "video":
+            raise ValueError(
+                "File's object must be of type video before calling "
+                "`VideoMetadataFromContentExtractor.extract`!"
+            )
+
         buffer = file_object.content_as_buffer
 
         if buffer:
@@ -79,7 +93,7 @@ class VideoMetadataFromContentExtractor(BaseExtractor):
             # if already cached. The next time property buffer is called it will reset again.
             video: MoviePyVideo = MoviePyVideo(buffer=buffer)
 
-            for attribute, value in video.metadata:
+            for attribute, value in video.metadata.items():
                 setattr(file_object.meta, attribute, value)
 
 
@@ -106,11 +120,18 @@ class ImageMetadataFromContentExtractor(BaseExtractor):
         if file_object._content is None:
             raise ValueError(
                 "Attribute `content` or `content_as_buffer` must be settled before calling "
-                "`VideoMetadataFromContentExtractor.extract`!"
+                "`ImageMetadataFromContentExtractor.extract`!"
             )
+
         if not len(file_object):
             raise ValueError(
-                "Length for file's object must set before calling `VideoMetadataFromContentExtractor.extract`!"
+                "Length for file's object must set before calling `ImageMetadataFromContentExtractor.extract`!"
+            )
+
+        if file_object.type != "image":
+            raise ValueError(
+                "File's object must be of type image before calling "
+                "`ImageMetadataFromContentExtractor.extract`!"
             )
 
         buffer = file_object.content_as_buffer
@@ -120,7 +141,7 @@ class ImageMetadataFromContentExtractor(BaseExtractor):
             # if already cached. The next time property buffer is called it will reset again.
             image: WandImage = WandImage(buffer=buffer)
 
-            for attribute, value in image.metadata:
+            for attribute, value in image.metadata.items():
                 setattr(file_object.meta, attribute, value)
 
 
@@ -213,8 +234,8 @@ class AudioMetadataFromContentExtractor(BaseExtractor):
         # if already cached. The next time property buffer is called it will reset again.
         tinytag: TinyTag = TinyTag(file_object.content_as_buffer, len(file_object))
         tinytag.load(tags=True, duration=True, image=False)
-        # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
-        tinytag.extra = dict(tinytag.extra)
+        # Same as code in tinytag, it turns default dict into dict so that it can throw KeyError
+        tinytag.other = dict(tinytag.other)
 
         attributes_to_extract: set[str] = {
             "album",
@@ -228,7 +249,7 @@ class AudioMetadataFromContentExtractor(BaseExtractor):
             "disc",
             "disc_total",
             "duration",
-            "extra",
+            "other",
             "genre",
             "samplerate",
             "title",
@@ -245,6 +266,10 @@ class AudioMetadataFromContentExtractor(BaseExtractor):
 
 
 class MimeTypeFromContentExtractor(BaseExtractor):
+    """
+
+    """
+
     @classmethod
     def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
@@ -253,7 +278,7 @@ class MimeTypeFromContentExtractor(BaseExtractor):
         if file_object._content is None:
             raise ValueError(
                 "Attribute `content` or `content_as_buffer` must be settled before calling "
-                "`AudioMetadataFromContentExtractor.extract`!"
+                "`MimeTypeFromContentExtractor.extract`!"
             )
 
         # Check if already there is a mimetype, if exists do nothing.
