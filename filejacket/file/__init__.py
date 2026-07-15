@@ -26,7 +26,9 @@ from __future__ import annotations
 from datetime import datetime
 from os import name
 from typing import Type, Any, Iterator, TYPE_CHECKING, Callable
+from inspect import getmembers, isfunction
 
+from ..engines.serializer import Serializer
 # modules
 from .action import FileActions
 from .content import FilePacket, FileContent
@@ -129,13 +131,21 @@ class BaseFile:
     meta: FileMetadata
     meta = None
     """
-    Additional metadata info that file can have. Those data not always will exist for all files.
+    Additional metadata info that file can have. This data not always will exist for all files.
     """
     hashes: FileHashes
     hashes = None
     """
     Checksum information for file.
     It can be multiples like MD5, SHA128, SHA256, SHA512.
+    """
+    _thumbnail: FileThumbnail
+    _thumbnail = None
+    """
+    Thumbnail information for file.
+    It can be animated or static thumbnail.
+    This also works as controller for the thumbnail representation of file.
+    This data not always will exist for all files.
     """
 
     # Initializer data
@@ -155,7 +165,7 @@ class BaseFile:
     Storage or file system currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
-    serializer: Type[JSONSerializer] | Type[PickleSerializer] = JSONSerializer
+    serializer: Type[Serializer] = JSONSerializer
     """
     Serializer available to make the object portable. 
     This can be changed to any class that implements serialize and deserialize method.
@@ -199,7 +209,7 @@ class BaseFile:
     """
     Pipeline to rename file when saving. This pipeline can be 
     non-blocking and errors that occur in it will be available through attribute `errors` at 
-    `extract_data_pipeline.errors`.
+    `rename_pipeline.errors`.
     """
 
     # Behavior controller for file
@@ -216,7 +226,7 @@ class BaseFile:
     _naming: FileNaming
     _naming = None
     """
-    Controller for renaming restrictions that file must adopt.
+    Controller for naming convention and renaming restrictions that file must adopt.
     """
     _content: FileContent
     _content = None
@@ -227,11 +237,6 @@ class BaseFile:
     _content_files = None
     """
     Controller for how the internal files packet in content of file will be handled.
-    """
-    _thumbnail: FileThumbnail
-    _thumbnail = None
-    """
-    Controller for the thumbnail representation of file. 
     """
     _option: FileOption
     _option = None
@@ -269,6 +274,11 @@ class BaseFile:
     SerializerError: Type[Exception] = SerializerError
     """
     Exception to throw when an error occur when serializing or deserializing an file.
+    """
+
+    __version__: str = "2"
+    """
+    Attribute to indicate the version of BaseFile loaded in serializer.
     """
 
     @classmethod
@@ -363,7 +373,7 @@ class BaseFile:
             self._naming = FileNaming()
             self._naming.related_file_object = self
             # Instantiate the history list calling the clean_history method.
-            self._naming.clean_history()
+            self._naming.history = []
 
         # Set up resources used for generating thumbnail and animated preview.
         if not self._thumbnail:
@@ -470,14 +480,6 @@ class BaseFile:
 
         """
         return id(self)
-
-    @property
-    def __version__(self: BaseFile) -> str:
-        """
-        Method to indicate the current version of BaseFile in order to allow changes between serialization
-        to be handled by `__init__()`
-        """
-        return "2"
 
     @property
     def __serialize__(self: BaseFile) -> dict[str, Any]:
