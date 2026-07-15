@@ -1,0 +1,247 @@
+{
+  "__source__": "filejacket.File",
+  "_thumbnail": {
+    "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
+    "animated_defaults": "filejacket.file.thumbnail.PreviewDefaults",
+    "static_file": null,
+    "animated_file": null,
+    "image_engine": "filejacket.adapters.image.WandImage",
+    "video_engine": "filejacket.adapters.video.MoviePyVideo",
+    "render_static_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.static.DocumentFirstPageRender",
+        "filejacket.pipelines.render.static.ImageRender",
+        "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
+        "filejacket.pipelines.render.static.VideoRender"
+      ]
+    },
+    "render_animated_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.animated.StaticAnimatedRender",
+        "filejacket.pipelines.render.animated.ImageAnimatedRender",
+        "filejacket.pipelines.render.animated.PSDAnimatedRender",
+        "filejacket.pipelines.render.animated.VideoAnimatedRender",
+        "filejacket.pipelines.render.animated.DocumentAnimatedRender"
+      ]
+    }
+  },
+  "update_date": "d:2026-07-14T23:25:58.817953",
+  "_actions": {
+    "__source__": "filejacket.file.action.FileActions",
+    "values": {
+      "thumbnail": true,
+      "was_previewed": false,
+      "preview": true,
+      "list": false,
+      "was_moved": false,
+      "hash": true,
+      "extract": false,
+      "rename": false,
+      "was_listed": false,
+      "was_saved": true,
+      "move": false,
+      "save": false,
+      "was_extracted": false,
+      "was_thumbnailed": false,
+      "was_renamed": false,
+      "was_hashed": false
+    }
+  },
+  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif",
+  "relative_path": "",
+  "hasher_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineContent",
+    "processor": "filejacket.adapters.pipeline.ProcessorContent",
+    "processors_candidate": [
+      [
+        "filejacket.pipelines.hasher.XXHASH128Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.MD5Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.SHA256Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ]
+    ]
+  },
+  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images",
+  "type": "image",
+  "_content_files": {
+    "internal_files": {},
+    "unpack_data_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor"
+      ]
+    },
+    "length": 0
+  },
+  "_naming": {
+    "__source__": "filejacket.file.name.FileNaming",
+    "values": {
+      "history": [],
+      "on_conflict_rename": false,
+      "related_file_object": "1",
+      "previous_saved_extension": null,
+      "filename": null,
+      "extension": null,
+      "filename_prefix": null,
+      "filename_sufix": null,
+      "directory_path": null,
+      "relative_path": null
+    }
+  },
+  "length": 80743,
+  "create_date": "d:2026-07-14T23:25:58.817953",
+  "_pipelines_override_keyword_arguments": [
+    [
+      {
+        "full_loop_check": true
+      },
+      "hasher_pipeline"
+    ]
+  ],
+  "filename": "fox.profile0.8bpc.yuv420",
+  "_content": {
+    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif:rb",
+    "buffer_helper": "filejacket.file.content.BufferBytes:None",
+    "cache_helper": "filejacket.file.content.NonCache",
+    "_block_size": 102400,
+    "_buffer_encoding": "utf-8",
+    "cached": false
+  },
+  "mime_type": "image/avif",
+  "_option": {
+    "__source__": "filejacket.file.option.FileOption",
+    "values": {
+      "allow_overwrite": false,
+      "allow_override": false,
+      "allow_search_hashes": true,
+      "allow_update": true,
+      "allow_rename": true,
+      "allow_extension_change": true,
+      "create_backup": true,
+      "save_hashes": true,
+      "save_description": false,
+      "save_thumbnails": false,
+      "save_info": false,
+      "save_desktop_shortcut": false,
+      "pipeline_raises_exception": false
+    }
+  },
+  "meta": {
+    "__source__": "filejacket.file.meta.FileMetadata",
+    "values": {
+      "packed": false,
+      "lossless": true,
+      "hashable": true,
+      "extra_data": {
+        "test_additionak_info": true,
+        "test_additionak_info_2": "Test",
+        "test_additionak_info_3": 1
+      },
+      "compressed": false
+    }
+  },
+  "rename_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.renamer.WindowsRenamer"
+    ]
+  },
+  "extension": "avif",
+  "__version__": "2",
+  "uri_handler": "filejacket.handler.URI",
+  "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
+  "storage": "filejacket.adapters.storage.LinuxFileSystem",
+  "_state": {
+    "__source__": "filejacket.file.state.FileState",
+    "values": {
+      "adding": false,
+      "processing": false,
+      "renaming": false,
+      "changing": false,
+      "moving": false
+    }
+  },
+  "extract_data_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineOrderedDependency",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+      "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+      "filejacket.pipelines.extractor.FileSystemDataExtractor",
+      "filejacket.pipelines.extractor.HashFileExtractor"
+    ]
+  },
+  "serializer": "filejacket.adapters.serializer.json_simple.FileJsonSerializer",
+  "compare_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.comparer.TypeCompare",
+      "filejacket.pipelines.comparer.SizeCompare",
+      "filejacket.pipelines.comparer.BinaryCompare",
+      "filejacket.pipelines.comparer.HashCompare",
+      "filejacket.pipelines.comparer.DataCompare"
+    ]
+  },
+  "id": "1",
+  "hashes": {
+    "xxh128": [
+      "97222323ef8b78ae40d9747fe6597662",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif.xxh128",
+        "class": "filejacket.File",
+        "content": {
+          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif.xxh128:rb",
+          "buffer_helper": "filejacket.file.content.BufferBytes:None",
+          "cache_helper": "filejacket.file.content.NonCache",
+          "_block_size": 102400,
+          "_buffer_encoding": "utf-8",
+          "cached": false
+        }
+      },
+      "filejacket.pipelines.hasher.XXHASH128Hasher"
+    ],
+    "md5": [
+      "65d697a3bedd6f799d0a3d60b46f7e01",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif.md5",
+        "class": "filejacket.File",
+        "content": {
+          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/fox.profile0.8bpc.yuv420.avif.md5:rb",
+          "buffer_helper": "filejacket.file.content.BufferBytes:None",
+          "cache_helper": "filejacket.file.content.NonCache",
+          "_block_size": 102400,
+          "_buffer_encoding": "utf-8",
+          "cached": false
+        }
+      },
+      "filejacket.pipelines.hasher.MD5Hasher"
+    ]
+  }
+}
