@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterator, Type, Any
 
-from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError
+from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError, EmptyHashContentError
 
 if TYPE_CHECKING:
     from . import BaseFile
@@ -148,10 +148,13 @@ class FileHashes:
         """
         return map(lambda x: str(x), self._cache.keys())
 
-    def rename(self, new_filename) -> None:
+    def rename(self, new_filename: str) -> None:
         """
         This method will rename file for each hash file existing in _caches.
-        This method don`t save files, only prepare the filename and content to be correct before saving it.
+        This method doesn't save files, only prepare the filename and content to be correct before saving it.
+
+        TODO: Fix to work with already saved hashes.
+              Test saving file hashes.
         """
         for hasher_name, value in self._cache.items():
             hex_value, hash_file, processor = value
@@ -166,14 +169,19 @@ class FileHashes:
             # First we set up content of type binary or string.
             content: bytes | str
 
+            iterable_hash_content = hash_file.content_as_iterator
+
+            if iterable_hash_content is None:
+                raise EmptyHashContentError("There is no loaded or generated content for hash associated with file.")
+
             if hash_file.is_binary:
                 content = b""
 
                 # Then we load content from generator using a loop.
-                for block in hash_file.content_as_iterator:
+                for block in iterable_hash_content:
                     content += block
 
-                # Change file`s filename inside content of hash file.
+                # Change file's filename inside content of hash file.
                 content = content.replace(
                     f"{hash_file.filename}.{hasher_name}".encode("uft-8"),
                     f"{new_filename}.{hasher_name}".encode("uft-8"),
@@ -182,7 +190,7 @@ class FileHashes:
                 content = ""
 
                 # Then we load content from generator using a loop.
-                for block in hash_file.content_as_iterator:
+                for block in iterable_hash_content:
                     content += block
 
                 # Change file's filename inside content of hash file.
@@ -197,7 +205,7 @@ class FileHashes:
 
     def validate(self, force: bool = False) -> None:
         """
-        Method to validate the integrity of file comparing hashes`s hex value with file content.
+        Method to validate the integrity of file comparing hashes' hex value with file content.
         This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
         external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
         """
