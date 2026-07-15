@@ -444,3 +444,9 @@ class FileThumbnail:
 
         # Reset the internal files. If it was False
         setattr(self, name, None)
+
+    def rename(self, new_filename: str) -> None:
+        pass
+
+    def save(self):
+        pass
