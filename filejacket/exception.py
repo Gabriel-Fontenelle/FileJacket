@@ -26,6 +26,7 @@ from __future__ import annotations
 __all__: list[str] = [
     "CacheContentNotSeekableError",
     "EmptyContentError",
+    "EmptyHashContentError",
     "ExtractorError",
     "ImproperlyConfiguredFile",
     "ImproperlyConfiguredPipeline",
@@ -63,6 +64,12 @@ class NoInternalContentError(FileJacketException):
 class EmptyContentError(FileJacketException):
     """
     Exception that defines errors for when a content was not loaded because its empty.
+    """
+
+
+class EmptyHashContentError(EmptyContentError):
+    """
+    Exception that defines errors for when a content for hash file its empty.
     """
 
 
