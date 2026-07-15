@@ -118,6 +118,26 @@ class OpenCVImage(ImageEngine):
 
         return buffer
 
+    def get_bytes_uncompressed(self) -> bytes:
+        """
+        Method to obtain the bytes' representation uncompressed for the content of the current image object.
+        """
+        return self.image
+
+    def get_keypoints_and_descriptors(self, feature_matcher = "orb") -> tuple:
+        """
+        Method to obtain the tuple of keypoint and descriptor that an image can have.
+        """
+        # convert to gray scale
+        cloned = self.clone()
+        cloned.change_color(colorspace="gray")
+
+        feature = {
+            "orb": cv2.ORB_create()
+        }
+
+        return feature[feature_matcher].detectAndCompute(cloned, None)
+
     def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
@@ -313,11 +333,38 @@ class PillowImage(ImageEngine):
 
     def get_bytes(self, encode_format: str = "jpeg") -> bytes:
         """
-        Method to obtain the bytes' representation for the content of the current image object.
+        Method to obtain the bytes' representation compressed for the content of the current image object.
         """
         output = BytesIO()
         self.image.save(output, format=encode_format)
         return output.read()
+
+    def get_bytes_uncompressed(self) -> bytes:
+        """
+        Method to obtain the bytes' representation uncompressed for the content of the current image object.
+        """
+        return self.image.tobytes()
+
+    def get_keypoints_and_descriptors(self, feature_matcher = "orb") -> tuple:
+        """
+        Method to obtain the tuple of keypoint and descriptor that an image can have.
+        This makes use of OpenCV to work.
+        """
+        cloned = self.clone()
+        # Convert to numpy array to be processed by descriptor.
+        array = np.asarray(bytearray(cloned.source_buffer.read()), dtype="uint8")
+        # Convert to grayscale before detection.
+
+        feature = {
+            "orb": cv2.ORB_create()
+        }
+        return feature[feature_matcher].detectAndCompute(cv2.imdecode(array, cv2.IMREAD_GRAYSCALE), None)
+
+    def get_mode(self) -> str:
+        """
+        Method to obtain the mode of current image, as RGB, RGBA, L, G, etc.
+        """
+        return self.image.mode
 
     def get_size(self) -> tuple[int, int]:
         """
@@ -491,6 +538,21 @@ class WandImage(ImageEngine):
         Method to obtain the bytes' representation for the content of the current image object.
         """
         return self.image.make_blob(encode_format)
+
+    def get_keypoints_and_descriptors(self, feature_matcher = "orb") -> tuple:
+        """
+        Method to obtain the tuple of keypoint and descriptor that an image can have.
+        This makes use of OpenCV to work.
+        """
+        cloned = self.clone()
+        # Convert to numpy array to be processed by descriptor.
+        array = np.asarray(bytearray(cloned.source_buffer.read()), dtype="uint8")
+
+        feature = {
+            "orb": cv2.ORB_create()
+        }
+        # Convert to grayscale before detection.
+        return feature[feature_matcher].detectAndCompute(cv2.imdecode(array, cv2.IMREAD_GRAYSCALE), None)
 
     def get_sequence_images(self) -> list:
         """
