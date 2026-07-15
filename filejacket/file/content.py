@@ -301,8 +301,10 @@ class NonCache:
         )
 
     def set_cached(self: NonCache):
-        """ """
-        ...
+        """
+        Method to set attribute cached. The class `NonCache` will always return False.
+        """
+        self.cached = False
 
 
 class FileContent:
@@ -490,9 +492,13 @@ class FileContent:
             "_buffer_encoding",
             "cached",
             "_cached_content",
+            "related_file_object",
         )
 
         return {key: getattr(self, key) for key in attributes}
+
+    related_file_object: BaseFile
+    related_file_object = None
 
     @property
     def should_load_to_memory(self) -> bool:
@@ -503,7 +509,7 @@ class FileContent:
 
         if not seekable and self.cached:
             raise CacheContentNotSeekableError(
-                f"The cache helper `{self.cache_helper.__name__}` does not produced a seekable buffer"
+                f"The buffer `{self.buffer.__name__}` does not produced a seekable content"
             )
 
         return not seekable and not self.cached
@@ -544,7 +550,10 @@ class FileContent:
             # Load content to memory with `self.content` and return the adequate buffer.
             try:
                 return self.buffer_helper.to_buffer(self.content)
-            except ImproperlyConfiguredFile:
+            except (
+                ImproperlyConfiguredFile,
+                OperationNotAllowed
+            ):
                 # Change cache to load from memory because the current `cache_helper` does not consume the content
                 # and save it in a cache.
                 self._cached_content = CacheInMemory()
@@ -566,7 +575,18 @@ class FileContent:
         Method to obtain the content as string.
         This method should not be used to convert a content buffered and not cached to str.
         """
-        return self.buffer_helper.to_str(self.content)
+        try:
+            return self.buffer_helper.to_str(self.content)
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
+            ...
+
+        try:
+            # No content found, try again with buffer loading the whole buffer in memory.
+            return self.buffer_helper.to_str(self.content_as_buffer.read())
+        except OperationNotAllowed:
+            ...
+
+        return None
 
     @property
     def content_as_bytes(self) -> bytes | None:
@@ -574,7 +594,18 @@ class FileContent:
         Method to obtain the content as bytes.
         This method should not be used to convert a content buffered and not cached to byte.
         """
-        return self.buffer_helper.to_bytes(self.content)
+        try:
+            return self.buffer_helper.to_bytes(self.content)
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
+            ...
+
+        try:
+            # No content found, try again with buffer loading the whole buffer in memory.
+            return self.buffer_helper.to_bytes(self.content_as_buffer.read())
+        except OperationNotAllowed:
+            ...
+
+        return None
 
     @property
     def content_as_base64(self) -> bytes | None:
@@ -586,7 +617,7 @@ class FileContent:
         try:
             # Load content and convert to base64
             return self.buffer_helper.to_base64(self.content)
-        except (EmptyContentError, ImproperlyConfiguredFile):
+        except (EmptyContentError, ImproperlyConfiguredFile, OperationNotAllowed):
             ...
 
         try:
@@ -756,7 +787,7 @@ class FilePacket:
         Method to clean the history of internal_files.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
-        self.history = []
+        self.history.clear()
 
     def files(self: FilePacket) -> Iterator[BaseFile]:
         """
@@ -787,7 +818,7 @@ class FilePacket:
         Method to clean the internal files keeping a history of changes.
         """
         if self.history is None:
-            self.clean_history()
+            self.history = []
 
         if self._internal_files:
             # Add current internal files to memory
