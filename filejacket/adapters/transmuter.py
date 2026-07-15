@@ -483,20 +483,29 @@ class TransmuterContentFilesReadonly(TransmuterEngine):
         transmuter_pipeline = TransmuterPipeline()
         transmuter_pipeline.serializer = self.serializer
 
+        def fix_crc_mapper(values: tuple):
+            key, file_tuple = values
+            if "crc32" in file_tuple[0].hashes:
+                hash_key = "crc32"
+                hash_value = file_tuple[0].hashes["crc32"][0]
+            else:
+                hash_value = next(iter(file_tuple[0].hashes.values()), None)
+                hash_key = next(iter(file_tuple[0].hashes.keys()), "crc32")
+
+            return key, {
+                hash_key: hash_value,
+                "length": file_tuple[1],
+                "type": file_tuple[2],
+            }
+
         return {
             "length": content_files["length"],
             "unpack_data_pipeline": transmuter_pipeline.from_data(
                 content_files["unpack_data_pipeline"]
             ),
             "internal_files": {
-                key: (
-                    {
-                        "crc32": value[0].hashes["crc32"][0] if "crc32" in value[0].hashes else None,
-                        "length": value[1],
-                        "type": value[2],
-                    }
-                )
-                for key, value in content_files["_internal_files"].items()
+                key: value
+                for key, value in map(fix_crc_mapper, content_files["_internal_files"].items())
             },
         }
 
