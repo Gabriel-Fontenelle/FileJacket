@@ -251,7 +251,7 @@
             ]
           },
           "extension": "jpg",
-          "__version__": "2",
+          "__version__": "1",
           "uri_handler": "filejacket.handler.URI",
           "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
@@ -464,7 +464,7 @@
             ]
           },
           "extension": "svg",
-          "__version__": "2",
+          "__version__": "1",
           "uri_handler": "filejacket.handler.URI",
           "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
@@ -677,7 +677,7 @@
             ]
           },
           "extension": "gif",
-          "__version__": "2",
+          "__version__": "1",
           "uri_handler": "filejacket.handler.URI",
           "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
@@ -813,7 +813,7 @@
     ]
   },
   "extension": "tar",
-  "__version__": "2",
+  "__version__": "1",
   "uri_handler": "filejacket.handler.URI",
   "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper",
   "storage": "filejacket.adapters.storage.LinuxFileSystem",

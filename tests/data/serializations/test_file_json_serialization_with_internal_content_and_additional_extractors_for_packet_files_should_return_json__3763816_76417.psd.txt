@@ -196,7 +196,7 @@
             }
           },
           "uri_handler": "filejacket.handler.URI",
-          "__version__": "2",
+          "__version__": "1",
           "length": 48,
           "_thumbnail": {
             "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
@@ -389,7 +389,7 @@
             }
           },
           "uri_handler": "filejacket.handler.URI",
-          "__version__": "2",
+          "__version__": "1",
           "length": 48,
           "_thumbnail": {
             "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
@@ -582,7 +582,7 @@
             }
           },
           "uri_handler": "filejacket.handler.URI",
-          "__version__": "2",
+          "__version__": "1",
           "length": 48,
           "_thumbnail": {
             "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
@@ -744,7 +744,7 @@
     }
   },
   "uri_handler": "filejacket.handler.URI",
-  "__version__": "2",
+  "__version__": "1",
   "length": 38205656,
   "_thumbnail": {
     "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",

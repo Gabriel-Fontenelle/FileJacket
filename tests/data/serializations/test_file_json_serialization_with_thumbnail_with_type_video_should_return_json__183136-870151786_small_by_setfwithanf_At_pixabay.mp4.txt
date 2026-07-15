@@ -147,7 +147,7 @@
     ]
   },
   "create_date": "d:2025-04-26T23:46:29.492008",
-  "__version__": "2",
+  "__version__": "1",
   "_option": {
     "__source__": "filejacket.file.option.FileOption",
     "values": {
@@ -293,7 +293,7 @@
           ]
         ]
       },
-      "__version__": "2",
+      "__version__": "1",
       "_option": {
         "__source__": "filejacket.file.option.FileOption",
         "values": {

@@ -236,7 +236,7 @@
               ]
             }
           },
-          "__version__": "2",
+          "__version__": "1",
           "extension": "jpg",
           "_state": {
             "__source__": "filejacket.file.state.FileState",
@@ -439,7 +439,7 @@
               ]
             }
           },
-          "__version__": "2",
+          "__version__": "1",
           "extension": "gif",
           "_state": {
             "__source__": "filejacket.file.state.FileState",
@@ -642,7 +642,7 @@
               ]
             }
           },
-          "__version__": "2",
+          "__version__": "1",
           "extension": "svg",
           "_state": {
             "__source__": "filejacket.file.state.FileState",
@@ -757,7 +757,7 @@
       ]
     }
   },
-  "__version__": "2",
+  "__version__": "1",
   "extension": "rar",
   "_state": {
     "__source__": "filejacket.file.state.FileState",

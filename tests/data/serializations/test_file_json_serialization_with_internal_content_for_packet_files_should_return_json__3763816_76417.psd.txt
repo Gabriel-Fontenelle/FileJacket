@@ -147,7 +147,7 @@
       ]
     }
   },
-  "__version__": "2",
+  "__version__": "1",
   "extension": "psd",
   "_state": {
     "__source__": "filejacket.file.state.FileState",

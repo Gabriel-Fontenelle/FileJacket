@@ -170,7 +170,7 @@
           "save": true
         }
       },
-      "__version__": "2",
+      "__version__": "1",
       "uri_handler": "filejacket.handler.URI",
       "compare_pipeline": {
         "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
@@ -333,7 +333,7 @@
       "save": false
     }
   },
-  "__version__": "2",
+  "__version__": "1",
   "uri_handler": "filejacket.handler.URI",
   "compare_pipeline": {
     "pipeline": "filejacket.adapters.pipeline.PipelineSequential",

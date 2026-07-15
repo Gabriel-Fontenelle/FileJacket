@@ -109,7 +109,7 @@
           "update_date": "d:2024-04-21T22:52:56",
           "extension": "jpg",
           "_pipelines_override_keyword_arguments": {},
-          "__version__": "2",
+          "__version__": "1",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
           "type": "image",
           "_state": {
@@ -313,7 +313,7 @@
           "update_date": "d:2024-04-21T22:56:16",
           "extension": "svg",
           "_pipelines_override_keyword_arguments": {},
-          "__version__": "2",
+          "__version__": "1",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
           "type": "image",
           "_state": {
@@ -517,7 +517,7 @@
           "update_date": "d:2024-04-21T23:00:28",
           "extension": "gif",
           "_pipelines_override_keyword_arguments": {},
-          "__version__": "2",
+          "__version__": "1",
           "storage": "filejacket.adapters.storage.LinuxFileSystem",
           "type": "image",
           "_state": {
@@ -701,7 +701,7 @@
       "hasher_pipeline"
     ]
   ],
-  "__version__": "2",
+  "__version__": "1",
   "storage": "filejacket.adapters.storage.LinuxFileSystem",
   "type": "application",
   "_state": {
