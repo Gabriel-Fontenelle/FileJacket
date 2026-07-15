@@ -125,13 +125,11 @@ class FileMetadata:
         try:
             return self.__getattribute__(name)
         except AttributeError:
-            if (
-                "extra_data" not in self.__dict__
-                or name not in self.__dict__["extra_data"]
-            ):
+            extra_data = self.__dict__.get("extra_data", {}).get(name)
+            if extra_data is None:
                 raise AttributeError(f"{name} is not an attribute of {self}.")
 
-            return self.__dict__["extra_data"][name]
+            return extra_data
 
     @property
     def __serialize__(self) -> dict[str, bool | dict]:
