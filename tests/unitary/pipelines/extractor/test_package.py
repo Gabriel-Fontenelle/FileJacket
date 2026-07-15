@@ -1,7 +1,7 @@
 import pytest
 
-from filejacket.pipelines.extractor.package import (
-    PackageExtractor,
+from filejacket.pipelines.packager import (
+    BasePackager,
     PSDLayersFromPackageExtractor,
     SevenZipCompressedFilesFromPackageExtractor,
     RarCompressedFilesFromPackageExtractor,
@@ -13,7 +13,7 @@ from filejacket.pipelines.extractor.package import (
 @pytest.mark.parametrize(
     "package_class",
     [
-        PackageExtractor,
+        BasePackager,
         PSDLayersFromPackageExtractor,
         TarCompressedFilesFromPackageExtractor,
         ZipCompressedFilesFromPackageExtractor,
@@ -41,10 +41,10 @@ def test_base_class_for_unpacking_raise_not_implemented_error_in_some_attributes
     file_object = request.getfixturevalue(file_fixture)
     
     with pytest.raises(NotImplementedError):
-        PackageExtractor.validate(file_object=file_object)
+        BasePackager.validate(file_object=file_object)
 
     with pytest.raises(NotImplementedError):
-        PackageExtractor.decompress(file_object=file_object, overrider=False)
+        BasePackager.decompress(file_object=file_object, overrider=False)
     
     with pytest.raises(NotImplementedError):
-        PackageExtractor.content_buffer(file_object=file_object, internal_file_name="name", mode="rb")
+        BasePackager.content_buffer(file_object=file_object, internal_file_name="name", mode="rb")
