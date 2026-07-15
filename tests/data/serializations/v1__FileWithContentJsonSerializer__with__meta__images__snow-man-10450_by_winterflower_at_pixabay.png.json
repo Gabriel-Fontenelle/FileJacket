@@ -1,0 +1,248 @@
+{
+  "__source__": "filejacket.File",
+  "storage": "filejacket.adapters.storage.LinuxFileSystem",
+  "update_date": "d:2026-07-15T03:24:44.479277",
+  "rename_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.renamer.WindowsRenamer"
+    ]
+  },
+  "_state": {
+    "__source__": "filejacket.file.state.FileState",
+    "values": {
+      "adding": false,
+      "changing": false,
+      "renaming": false,
+      "moving": false,
+      "processing": false
+    }
+  },
+  "_content": {
+    "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png:rb",
+    "buffer_helper": "filejacket.file.content.BufferBytes:None",
+    "cache_helper": "filejacket.file.content.NonCache",
+    "_block_size": 102400,
+    "_buffer_encoding": "utf-8",
+    "cached": false,
+    "content_base64": "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"
+  },
+  "filename": "snow-man-10450_by_winterflower_at_pixabay",
+  "serializer": "filejacket.adapters.serializer.json_simple.FileWithContentJsonSerializer",
+  "meta": {
+    "__source__": "filejacket.file.meta.FileMetadata",
+    "values": {
+      "hashable": true,
+      "extra_data": {
+        "test_additionak_info": true,
+        "test_additionak_info_2": "Test",
+        "test_additionak_info_3": 1
+      },
+      "packed": false,
+      "compressed": false,
+      "lossless": false
+    }
+  },
+  "__version__": "1",
+  "_naming": {
+    "__source__": "filejacket.file.name.FileNaming",
+    "values": {
+      "history": [],
+      "on_conflict_rename": false,
+      "related_file_object": "1",
+      "previous_saved_extension": null,
+      "filename": null,
+      "extension": null,
+      "filename_prefix": null,
+      "filename_sufix": null,
+      "directory_path": null,
+      "relative_path": null
+    }
+  },
+  "_pipelines_override_keyword_arguments": [
+    [
+      {
+        "full_loop_check": true
+      },
+      "hasher_pipeline"
+    ]
+  ],
+  "mime_type": "image/png",
+  "relative_path": "",
+  "_thumbnail": {
+    "static_defaults": "filejacket.file.thumbnail.ThumbnailDefaults",
+    "animated_defaults": "filejacket.file.thumbnail.PreviewDefaults",
+    "static_file": null,
+    "animated_file": null,
+    "image_engine": "filejacket.adapters.image.WandImage",
+    "video_engine": "filejacket.adapters.video.MoviePyVideo",
+    "render_static_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.static.DocumentFirstPageRender",
+        "filejacket.pipelines.render.static.ImageRender",
+        "filejacket.pipelines.render.static.PSDRender",
+        "filejacket.pipelines.render.static.VectorRender",
+        "filejacket.pipelines.render.static.VectorSWFRender",
+        "filejacket.pipelines.render.static.VideoRender"
+      ]
+    },
+    "render_animated_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.render.animated.StaticAnimatedRender",
+        "filejacket.pipelines.render.animated.ImageAnimatedRender",
+        "filejacket.pipelines.render.animated.PSDAnimatedRender",
+        "filejacket.pipelines.render.animated.VideoAnimatedRender",
+        "filejacket.pipelines.render.animated.DocumentAnimatedRender"
+      ]
+    }
+  },
+  "id": "1",
+  "_option": {
+    "__source__": "filejacket.file.option.FileOption",
+    "values": {
+      "allow_overwrite": false,
+      "allow_override": false,
+      "allow_search_hashes": true,
+      "allow_update": true,
+      "allow_rename": true,
+      "allow_extension_change": true,
+      "create_backup": true,
+      "save_hashes": true,
+      "save_description": false,
+      "save_thumbnails": false,
+      "save_info": false,
+      "save_desktop_shortcut": false,
+      "pipeline_raises_exception": false
+    }
+  },
+  "hasher_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineContent",
+    "processor": "filejacket.adapters.pipeline.ProcessorContent",
+    "processors_candidate": [
+      [
+        "filejacket.pipelines.hasher.XXHASH128Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.MD5Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ],
+      [
+        "filejacket.pipelines.hasher.SHA256Hasher",
+        {
+          "full_check": true,
+          "full_loop_check": true
+        }
+      ]
+    ]
+  },
+  "extract_data_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineOrderedDependency",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.extractor.FilenameAndExtensionFromPathExtractor",
+      "filejacket.pipelines.extractor.MimeTypeFromFilenameExtractor",
+      "filejacket.pipelines.extractor.FileSystemDataExtractor",
+      "filejacket.pipelines.extractor.HashFileExtractor"
+    ]
+  },
+  "type": "image",
+  "uri_handler": "filejacket.handler.URI",
+  "_path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png",
+  "compare_pipeline": {
+    "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+    "processor": "filejacket.engines.pipeline.Processor",
+    "processors_candidate": [
+      "filejacket.pipelines.comparer.TypeCompare",
+      "filejacket.pipelines.comparer.SizeCompare",
+      "filejacket.pipelines.comparer.BinaryCompare",
+      "filejacket.pipelines.comparer.HashCompare",
+      "filejacket.pipelines.comparer.DataCompare"
+    ]
+  },
+  "length": 9580,
+  "create_date": "d:2026-07-15T03:24:44.479277",
+  "extension": "png",
+  "_actions": {
+    "__source__": "filejacket.file.action.FileActions",
+    "values": {
+      "extract": false,
+      "was_saved": true,
+      "was_listed": false,
+      "save": false,
+      "preview": true,
+      "was_previewed": false,
+      "was_moved": false,
+      "was_renamed": false,
+      "move": false,
+      "hash": true,
+      "was_extracted": false,
+      "list": false,
+      "was_thumbnailed": false,
+      "was_hashed": false,
+      "rename": false,
+      "thumbnail": true
+    }
+  },
+  "hashes": {
+    "xxh128": [
+      "ed2eeccebcab28d0830a4f499621a7db",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png.xxh128",
+        "class": "filejacket.File",
+        "content": {
+          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png.xxh128:rb",
+          "buffer_helper": "filejacket.file.content.BufferBytes:None",
+          "cache_helper": "filejacket.file.content.NonCache",
+          "_block_size": 102400,
+          "_buffer_encoding": "utf-8",
+          "cached": false
+        }
+      },
+      "filejacket.pipelines.hasher.XXHASH128Hasher"
+    ],
+    "md5": [
+      "f7460016f77e92bca73027d5be1fcd9f",
+      {
+        "path": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png.md5",
+        "class": "filejacket.File",
+        "content": {
+          "buffer": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images/snow-man-10450_by_winterflower_at_pixabay.png.md5:rb",
+          "buffer_helper": "filejacket.file.content.BufferBytes:None",
+          "cache_helper": "filejacket.file.content.NonCache",
+          "_block_size": 102400,
+          "_buffer_encoding": "utf-8",
+          "cached": false
+        }
+      },
+      "filejacket.pipelines.hasher.MD5Hasher"
+    ]
+  },
+  "_content_files": {
+    "internal_files": {},
+    "unpack_data_pipeline": {
+      "pipeline": "filejacket.adapters.pipeline.PipelineSequential",
+      "processor": "filejacket.engines.pipeline.Processor",
+      "processors_candidate": [
+        "filejacket.pipelines.packager.SevenZipCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.RarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.TarCompressedFilesFromPackageExtractor",
+        "filejacket.pipelines.packager.ZipCompressedFilesFromPackageExtractor"
+      ]
+    },
+    "length": 0
+  },
+  "_save_to": "/home/invictus/Desenvolvimentos/Python/FileJacket/tests/data/images",
+  "mime_type_handler": "filejacket.adapters.mimetype.LibraryMimeTyper"
+}
