@@ -109,7 +109,8 @@ from .adapters.serializer import (
     JSONSerializer,
     FileJsonSerializer,
     FileJsonSerializerReadonly,
-    FileDictionarySerializer
+    FileDictionarySerializer,
+    FileWithContentJsonSerializer,
 )
 
 __all__ = [
@@ -134,6 +135,7 @@ __all__ = [
     "FileJsonSerializer",
     "FileJsonSerializerReadonly",
     "FileSystemDataExtractor",
+    "FileWithContentJsonSerializer",
     "FilenameAndExtensionFromPathExtractor",
     "FilenameFromMetadataExtractor",
     "FilenameFromURLExtractor",
