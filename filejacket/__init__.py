@@ -27,10 +27,11 @@ from .adapters.mimetype import LibraryMimeTyper, APIMimeTyper
 from .adapters.pipeline import PipelineContent, PipelineOrderedDependency, PipelineSequential, ProcessorContent
 from .adapters.storage import WindowsFileSystem, LinuxFileSystem
 from .adapters.video import MoviePyVideo
+# Module with engines for adapters
 from .engines.image import ImageEngine
 # A Pipeline is a sequence that loop processors to be run.
 from .engines.pipeline import Processor, PipelineEngine
-# Module with engines for adapters
+from .engines.serializer import Serializer
 from .engines.storage import StorageEngine
 from .engines.video import VideoEngine
 from .exception import (
@@ -73,7 +74,9 @@ from .pipelines.extractor import (
     FilenameFromMetadataExtractor,
     MetadataExtractor,
     AudioMetadataFromContentExtractor,
+    ImageMetadataFromContentExtractor,
     MimeTypeFromContentExtractor,
+    VideoMetadataFromContentExtractor,
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
 from .pipelines.hasher import CRC32Hasher, MD5Hasher, SHA256Hasher
@@ -96,31 +99,50 @@ from .pipelines.render import (
     ImageRender,
     PSDRender,
     StaticAnimatedRender,
+    VectorRender,
+    VectorSWFRender,
     VideoRender,
 )
 # Module with classes for serializing/deserializing objects.
-from .serializer import PickleSerializer, JSONSerializer, FileJsonSerializer
+from .adapters.serializer import (
+    PickleSerializer,
+    JSONSerializer,
+    FileJsonSerializer,
+    FileJsonSerializerReadonly,
+    FileDictionarySerializer
+)
 
 __all__ = [
     "APIMimeTyper",
     "AudioMetadataFromContentExtractor",
-    "BaseFile",
-    "BinaryCompare",
+    "BaseAnimatedRender",
     "BaseComparer",
-    "BasePackager",
-    "ContentFile",
-    "CRC32Hasher",
-    "DataCompare",
     "BaseExtractor",
+    "BaseFile",
+    "BaseHasher",
+    "BasePackager",
+    "BaseRenamer",
+    "BaseRender",
+    "BaseStaticRender",
+    "BinaryCompare",
+    "CRC32Hasher",
+    "ContentFile",
+    "DataCompare",
+    "DocumentFirstPageRender",
     "File",
+    "FileDictionarySerializer",
+    "FileJsonSerializer",
+    "FileJsonSerializerReadonly",
     "FileSystemDataExtractor",
     "FilenameAndExtensionFromPathExtractor",
     "FilenameFromMetadataExtractor",
     "FilenameFromURLExtractor",
     "HashCompare",
     "HashFileExtractor",
-    "BaseHasher",
+    "ImageAnimatedRender",
     "ImageEngine",
+    "ImageMetadataFromContentExtractor",
+    "ImageRender",
     "ImproperlyConfiguredFile",
     "JSONSerializer",
     "LibraryMimeTyper",
@@ -132,10 +154,12 @@ __all__ = [
     "MimeTypeCompare",
     "MimeTypeFromContentExtractor",
     "MimeTypeFromFilenameExtractor",
+    "MoviePyVideo",
     "NameCompare",
     "NoInternalContentError",
     "OpenCVImage",
     "OperationNotAllowed",
+    "PSDRender",
     "PathFromURLExtractor",
     "PickleSerializer",
     "PillowImage",
@@ -146,20 +170,12 @@ __all__ = [
     "Processor",
     "ProcessorContent",
     "RarCompressedFilesFromPackageExtractor",
-    "BaseRenamer",
-    "BaseRender",
-    "BaseAnimatedRender",
-    "BaseStaticRender",
-    "DocumentFirstPageRender",
-    "ImageAnimatedRender",
-    "ImageRender",
-    "PSDRender",
-    "StaticAnimatedRender",
-    "VideoRender",
     "ReservedFilenameError",
     "SHA256Hasher",
+    "Serializer",
     "SevenZipCompressedFilesFromPackageExtractor",
     "SizeCompare",
+    "StaticAnimatedRender",
     "StorageEngine",
     "StreamFile",
     "System",
@@ -167,13 +183,15 @@ __all__ = [
     "URI",
     "UniqueRenamer",
     "ValidationError",
-    "MoviePyVideo",
+    "VectorRender",
+    "VectorSWFRender",
+    "VideoEngine",
+    "VideoMetadataFromContentExtractor",
+    "VideoRender",
     "WandImage",
     "WindowsFileSystem",
     "WindowsRenamer",
     "ZipCompressedFilesFromPackageExtractor",
-    "VideoEngine",
-    "FileJsonSerializer",
 ]
 
 

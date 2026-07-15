@@ -1,6 +1,7 @@
 from .content import (
     AudioMetadataFromContentExtractor,
     DocumentMetadataFromContentExtractor,
+    ImageMetadataFromContentExtractor,
     MimeTypeFromContentExtractor,
     VideoMetadataFromContentExtractor,
 )
@@ -31,6 +32,7 @@ __all__ = [
     # Parsing from Content
     "AudioMetadataFromContentExtractor",
     "DocumentMetadataFromContentExtractor",
+    "ImageMetadataFromContentExtractor",
     "MimeTypeFromContentExtractor",
     "VideoMetadataFromContentExtractor",
 ]
